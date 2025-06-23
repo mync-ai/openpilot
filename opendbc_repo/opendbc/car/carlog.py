@@ -13,7 +13,7 @@ carlog.addHandler(handler)
 
 # customize our logging
 telemetry_log = logging.getLogger('telemetry_log')
-logging.addLevelName(25, "TELEMETRY");telemetry_log.setLevel("TELEMETRY")
+logging.addLevelName(25, 'TELEMETRY');telemetry_log.setLevel('TELEMETRY')
 telemetry_log.propagate = False
 
 # telemetry_handler = logging.handlers.SocketHandler('172.20.10.14', 9999)
