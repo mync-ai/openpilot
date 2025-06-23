@@ -20,4 +20,4 @@ telemetry_log.propagate = False
 telemetry_handler = logging.FileHandler("/data/openpilot/telemetry.log", mode='w', encoding='utf-8', delay=False)
 telemetry_handler.setFormatter(logging.Formatter('%(message)s'))
 telemetry_log.addHandler(telemetry_handler)
-telemetry_log.log("TELEMETRY", "test telemetry message!")
+telemetry_log.log(25, "test telemetry message!")
