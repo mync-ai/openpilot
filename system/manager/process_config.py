@@ -112,6 +112,9 @@ procs = [
   PythonProcess("webrtcd", "system.webrtc.webrtcd", notcar),
   PythonProcess("webjoystick", "tools.bodyteleop.web", notcar),
   PythonProcess("joystick", "tools.joystick.joystick_control", and_(joystick, iscar)),
+
+  # Mosync procs
+  PythonProcess("telemetryd", "selfdrive.telemetryd.telemetry", always_run)
 ]
 
 managed_processes = {p.name: p for p in procs}

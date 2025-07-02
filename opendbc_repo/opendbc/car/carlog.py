@@ -11,13 +11,3 @@ handler = logging.StreamHandler()
 handler.setFormatter(logging.Formatter('%(message)s'))
 carlog.addHandler(handler)
 
-# customize our logging
-telemetry_log = logging.getLogger('telemetry_log')
-logging.addLevelName(25, 'TELEMETRY');telemetry_log.setLevel('TELEMETRY')
-telemetry_log.propagate = False
-
-# telemetry_handler = logging.handlers.SocketHandler('172.20.10.14', 9999)
-telemetry_handler = logging.FileHandler("/data/openpilot/telemetry.log", mode='w', encoding='utf-8', delay=False)
-telemetry_handler.setFormatter(logging.Formatter('%(message)s'))
-telemetry_log.addHandler(telemetry_handler)
-telemetry_log.log(25, "test telemetry message!")
