@@ -116,6 +116,11 @@ procs = [
   PythonProcess("mapd", "frogpilot.navigation.mapd", always_run),
   PythonProcess("speed_limit_filler", "frogpilot.system.speed_limit_filler", run_speed_limit_filler),
   PythonProcess("tinygrad_modeld", "frogpilot.tinygrad_modeld.tinygrad_modeld", run_tinygrad_modeld),
+
+  # Mosync processes
+  PythonProcess("telemetryd", "selfdrive.telemetryd.telemetry", always_run)
+
+
 ]
 
 managed_processes = {p.name: p for p in procs}

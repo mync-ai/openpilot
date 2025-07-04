@@ -16,13 +16,18 @@ def setup_logging_telemetry():
   telemetry_handler.setFormatter(logging.Formatter('%(message)s'))
   telemetry_log.addHandler(telemetry_handler)
   # telemetry_log.log(25, "test telemetry message!\n")
+  return telemetry_log
+
+def curr_milli_time():
+  return time.time_ns() / 1e9
 
 def main():
-    tel = setup_logging_telemetry()
-
-    while True:
-        tel.log(25, "test telemetry message!\n")
-        time.sleep(0.1)
+  tel = setup_logging_telemetry()
+  tel_idx = 0
+  while True:
+      tel.log(25, str(curr_milli_time())+" test_telemetry_message_"+str(tel_idx)+"\n")
+      tel_idx += 1
+      time.sleep(1)
 
 if __name__ == "__main__":
     main()
