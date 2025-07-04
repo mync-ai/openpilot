@@ -25,7 +25,7 @@ def main():
   tel = setup_logging_telemetry()
   tel_idx = 0
   while True:
-      tel.log(25, str(curr_milli_time())+" test_telemetry_message_"+str(tel_idx)+"\n")
+      tel.log(25, (str(curr_milli_time())+" test_telemetry_message_"+str(tel_idx)+"\n").encode('utf-8'))
       tel_idx += 1
       time.sleep(1)
 
