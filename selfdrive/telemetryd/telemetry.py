@@ -19,8 +19,9 @@ import cereal.messaging as messaging
 #   # telemetry_log.log(25, "test telemetry message!\n")
 #   return telemetry_log
 
-def curr_milli_time():
-  return time.time_ns() / 1e9
+def curr_time():
+    # return time.time_ns() / 1e9
+    return time.perf_counter()
 
 def connect(ip, port, retry_delay=2):
     while True:
@@ -46,7 +47,7 @@ def main():
     tel_idx = 0
     try:
       while True:
-        msg = str(curr_milli_time())+" test_"+str(tel_idx)
+        msg = str(curr_time())+" test_"+str(tel_idx)
         s.sendall(msg.encode('utf-8'))
         tel_idx += 1
         print(f"Sent: {tel_idx}")
