@@ -38,6 +38,7 @@ def main():
         msg = str(curr_milli_time())+" test_"+str(tel_idx)
         s.sendall(msg.encode('utf-8'))
         tel_idx += 1
+        print(f"Sent: {tel_idx}")
         time.sleep(1)
 
 if __name__ == "__main__":
