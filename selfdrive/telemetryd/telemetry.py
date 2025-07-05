@@ -44,12 +44,18 @@ def main():
 
   s = connect("172.20.10.14", 9999, retry_delay=2)
   tel_idx = 0
-  while True:
+  try:
+    while True:
       msg = str(curr_milli_time())+" test_"+str(tel_idx)
       s.sendall(msg.encode('utf-8'))
       tel_idx += 1
       print(f"Sent: {tel_idx}")
       time.sleep(1)
+  except (BrokenPipeError, ConnectionResetError, OSError) as e:
+    # print(f"Connection lost: {e}")
+    s.close()
+    # print("Reconnecting...")
+    time.sleep(1)
 
 if __name__ == "__main__":
     main()
