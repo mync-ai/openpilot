@@ -20,8 +20,8 @@ import cereal.messaging as messaging
 #   return telemetry_log
 
 def curr_time():
-    # return time.time_ns() / 1e9
-    return time.perf_counter()
+    return time.time_ns() / 1e9
+    # return time.perf_counter()
 
 def connect(ip, port, retry_delay=2):
     while True:
