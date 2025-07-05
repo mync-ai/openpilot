@@ -12,7 +12,7 @@ import cereal.messaging as messaging
 #   logging.addLevelName(25, 'TELEMETRY');telemetry_log.setLevel('TELEMETRY')
 #   telemetry_log.propagate = False
 
-#   telemetry_handler = logging.handlers.SocketHandler('172.20.10.2', 9999)
+  # telemetry_handler = logging.handlers.SocketHandler('172.20.10.14', 9999)
 #   # telemetry_handler = logging.FileHandler("/data/openpilot/telemetry.log", mode='w', encoding='utf-8', delay=False)
 #   telemetry_handler.setFormatter(logging.Formatter('%(message)s'))
 #   telemetry_log.addHandler(telemetry_handler)
@@ -30,14 +30,15 @@ def main():
   #     tel_idx += 1
   #     time.sleep(1)
 
-  s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-  s.connect(('172.20.10.2', 9999))
-  s.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
-  tel_idx = 0
-  while True:
-      s.sendall((str(curr_milli_time())+" test_"+str(tel_idx)+'\n').encode('utf-8'))
-      tel_idx += 1
-      time.sleep(1)
+  with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+    s.connect(("172.20.10.14", 9999))
+    s.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
+    tel_idx = 0
+    while True:
+        msg = str(curr_milli_time())+" test_"+str(tel_idx)
+        s.sendall(msg.encode('utf-8'))
+        tel_idx += 1
+        time.sleep(1)
 
 if __name__ == "__main__":
     main()
