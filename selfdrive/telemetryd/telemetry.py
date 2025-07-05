@@ -22,6 +22,18 @@ import cereal.messaging as messaging
 def curr_milli_time():
   return time.time_ns() / 1e9
 
+def connect(ip, port, retry_delay=2):
+    while True:
+        try:
+            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            s.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
+            s.connect((ip, port))
+            # print(f"Connected to {ip}:{port}")
+            return s
+        except (OSError, socket.error) as e:
+            # print(f"Connection failed: {e}. Retrying in {retry_delay}s...")
+            time.sleep(retry_delay)
+
 def main():
   # tel = setup_logging_telemetry()
   # tel_idx = 0
@@ -31,8 +43,7 @@ def main():
   #     time.sleep(1)
 
   with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-    s.connect(("172.20.10.14", 9999))
-    s.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
+    s = connect("172.20.10.14", 9999, retry_delay=2)
     tel_idx = 0
     while True:
         msg = str(curr_milli_time())+" test_"+str(tel_idx)
