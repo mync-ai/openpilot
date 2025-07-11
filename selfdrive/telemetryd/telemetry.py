@@ -4,7 +4,6 @@ import logging.handlers
 import socket
 
 import time
-import cereal.messaging as messaging
 from openpilot.selfdrive.telemetryd.subscriber import *
 
 # def setup_logging_telemetry():
@@ -57,7 +56,6 @@ def main():
   #     tel.log(25, (str(curr_milli_time())+" test_"+str(tel_idx)+'\n'))
   #     tel_idx += 1
   #     time.sleep(1)
-  sm = messaging.SubMaster(['deviceState', 'controlsState'])
   
   TCP1_channel = channel("TCP1", "tcp1")
   TCP2_channel = channel("TCP2", "tcp2")
