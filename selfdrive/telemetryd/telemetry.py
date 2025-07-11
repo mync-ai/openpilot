@@ -5,7 +5,7 @@ import socket
 
 import time
 import cereal.messaging as messaging
-from subscriber import *
+from openpilot.selfdrive.telemetryd.subscriber import *
 
 # def setup_logging_telemetry():
 #   # customize our logging
