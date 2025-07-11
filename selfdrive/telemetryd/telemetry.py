@@ -4,7 +4,7 @@ import logging.handlers
 import socket
 
 import time
-from openpilot.selfdrive.telemetryd.subscriber import *
+# from openpilot.selfdrive.telemetryd.subscriber import *
 
 # def setup_logging_telemetry():
 #   # customize our logging
@@ -65,17 +65,19 @@ def main():
     tel_idx = 0
     try:
       while True:
-        acc,jerks = get_cereal_data()
-        msg = " Acc: {:.2f}, Jerks: {:.2f}".format(acc, jerks)
-        msg = str(curr_time())+msg
+        # acc,jerks = get_cereal_data()
+        # msg = " Acc: {:.2f}, Jerks: {:.2f}\n".format(acc, jerks)
+        
+        # msg = str(curr_time())+msg
+        msg = str(curr_time())+" test_"+str(tel_idx)
         TCP1_channel.socket.sendall(msg.encode('utf-8'))
         tel_idx += 1
-        # print(f"Sent: {tel_idx}")
+        print(f"Sent: {tel_idx}")
         time.sleep(1)
     except (BrokenPipeError, ConnectionResetError, OSError) as e:
-      # print(f"Connection lost: {e}")
+      print(f"Connection lost: {e}")
       TCP1_channel.socket.close()
-      # print("Reconnecting...")
+      print("Reconnecting...")
       time.sleep(1)
 
 if __name__ == "__main__":
