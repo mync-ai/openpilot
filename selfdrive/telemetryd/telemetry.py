@@ -68,13 +68,13 @@ def main():
         acc,jerks = get_cereal_data()
         print(f"Received: {acc}, {jerks}")
         if acc and jerks:
-          msg = " Acc: {:.2f}, Jerks: {:.2f}".format(acc, jerks)
+          msg = f" Acc: {acc}, Jerks: {jerks}"
         else:
           msg = " Invalid data"
         msg = str(curr_time())+msg
 
         # msg = str(curr_time())+" test_"+str(tel_idx)
-        
+
         TCP1_channel.socket.sendall(msg.encode('utf-8'))
         tel_idx += 1
         print(f"Sent: {tel_idx}")
@@ -82,6 +82,7 @@ def main():
     except (BrokenPipeError, ConnectionResetError, OSError) as e:
       print(f"Connection lost: {e}")
       TCP1_channel.socket.close()
+      TCP1_channel.socket = TCP1_channel.create_socket()
       print("Reconnecting...")
       time.sleep(1)
 
