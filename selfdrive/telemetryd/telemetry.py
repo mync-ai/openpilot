@@ -5,6 +5,7 @@ import socket
 
 import time
 import cereal.messaging as messaging
+from subscriber import *
 
 # def setup_logging_telemetry():
 #   # customize our logging
@@ -56,7 +57,7 @@ def main():
   #     tel.log(25, (str(curr_milli_time())+" test_"+str(tel_idx)+'\n'))
   #     tel_idx += 1
   #     time.sleep(1)
-
+  sm = messaging.SubMaster(['deviceState', 'controlsState'])
   
   TCP1_channel = channel("TCP1", "tcp1")
   TCP2_channel = channel("TCP2", "tcp2")
@@ -66,10 +67,12 @@ def main():
     tel_idx = 0
     try:
       while True:
-        msg = str(curr_time())+" test_"+str(tel_idx)
+        acc,jerks = get_cereal_data()
+        msg = " Acc: {:.2f}, Jerks: {:.2f}".format(acc, jerks)
+        msg = str(curr_time())+msg
         TCP1_channel.socket.sendall(msg.encode('utf-8'))
         tel_idx += 1
-        print(f"Sent: {tel_idx}")
+        # print(f"Sent: {tel_idx}")
         time.sleep(1)
     except (BrokenPipeError, ConnectionResetError, OSError) as e:
       # print(f"Connection lost: {e}")
