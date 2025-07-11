@@ -4,7 +4,7 @@ import logging.handlers
 import socket
 
 import time
-# from openpilot.selfdrive.telemetryd.subscriber import *
+from openpilot.selfdrive.telemetryd.subscriber import *
 
 # def setup_logging_telemetry():
 #   # customize our logging
@@ -65,11 +65,16 @@ def main():
     tel_idx = 0
     try:
       while True:
-        # acc,jerks = get_cereal_data()
-        # msg = " Acc: {:.2f}, Jerks: {:.2f}\n".format(acc, jerks)
+        acc,jerks = get_cereal_data()
+        print(f"Received: {acc}, {jerks}")
+        if acc and jerks:
+          msg = " Acc: {:.2f}, Jerks: {:.2f}".format(acc, jerks)
+        else:
+          msg = " Invalid data"
+        msg = str(curr_time())+msg
+
+        # msg = str(curr_time())+" test_"+str(tel_idx)
         
-        # msg = str(curr_time())+msg
-        msg = str(curr_time())+" test_"+str(tel_idx)
         TCP1_channel.socket.sendall(msg.encode('utf-8'))
         tel_idx += 1
         print(f"Sent: {tel_idx}")

@@ -184,10 +184,10 @@ def manager_thread() -> None:
 
     ensure_running(managed_processes.values(), started, params=params, CP=sm['carParams'], not_run=ignore, classic_model=classic_model, tinygrad_model=tinygrad_model, frogpilot_toggles=frogpilot_toggles)
 
-    running = ' '.join("{}{}\u001b[0m".format("\u001b[32m" if p.proc.is_alive() else "\u001b[31m", p.name)
-                       for p in managed_processes.values() if p.proc)
-    print(running)
-    cloudlog.debug(running)
+    # running = ' '.join("{}{}\u001b[0m".format("\u001b[32m" if p.proc.is_alive() else "\u001b[31m", p.name)
+    #                    for p in managed_processes.values() if p.proc)
+    # print(running)
+    # cloudlog.debug(running)
 
     # send managerState
     msg = messaging.new_message('managerState', valid=True)
