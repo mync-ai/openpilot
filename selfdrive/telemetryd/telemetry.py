@@ -61,7 +61,7 @@ def main():
   TCP2_channel = channel("TCP2", "tcp2")
 
   while True:
-    TCP1_channel.connect("172.20.10.14", 9999, retry_delay=2)
+    TCP1_channel.connect("192.168.1.110", 9999, retry_delay=2)
     tel_idx = 0
     try:
       while True:
