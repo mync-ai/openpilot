@@ -13,7 +13,7 @@ class Decider:
     HARD_RIGHT = 6
 
     commands = ['NEUTRAL', 'FORWARD', 'BACK', 'MILD_LEFT', 'MILD_RIGHT', 'HARD_LEFT', 'HARD_RIGHT']
-    events = ['STOP', 'ACCELERATE', 'CURVE', 'TURN']
+    events = ['STOP', 'ACCELERATE', 'TURN', 'CURVE']
 
     def __init__(self, turn_thresh_1=1.5, turn_thresh_2=5.0, long_thresh=2.0):
         self.accelX_pred = []
@@ -109,52 +109,16 @@ class Decider:
             return self.NEUTRAL
 
         if self.rght_blnk:
-            # Check for both hard and mild left conditions
-            hard_left = maxY > self.turn_thr2
-            mild_left = maxY > self.turn_thr1
-
-            # If both conditions are met, check acceleration over next 1 second
-            if hard_left and mild_left:
-                # Get 1-second window of acceleration data
-                ind_1s = next((i for i, t in enumerate(self.kinetime) if t > 1), len(self.kinetime))
-                accelY_1s = [self.accelY_pred[i] for i in range(min(ind_1s, len(self.accelY_pred)))]
-
-                # Calculate average acceleration over 1 second
-                avg_accel_1s = sum(accelY_1s) / len(accelY_1s) if accelY_1s else 0
-
-                # Determine intensity based on average acceleration
-                if avg_accel_1s > self.turn_thr2:
-                    return self.HARD_LEFT
-                elif avg_accel_1s > self.turn_thr1:
-                    return self.MILD_LEFT
-            elif hard_left:
-                return self.HARD_LEFT
-            elif mild_left:
-                return self.MILD_LEFT
+            if maxY > self.turn_thr2:
+                return self.HARD_RIGHT
+            elif maxY > self.turn_thr1:
+                return self.MILD_RIGHT
 
         elif self.lft_blnk:
-            # Check for both hard and mild right conditions
-            hard_right = minY < -self.turn_thr2
-            mild_right = minY < -self.turn_thr1
-
-            # If both conditions are met, check acceleration over next 1 second
-            if hard_right and mild_right:
-                # Get 1-second window of acceleration data
-                ind_1s = next((i for i, t in enumerate(self.kinetime) if t > 1), len(self.kinetime))
-                accelY_1s = [self.accelY_pred[i] for i in range(min(ind_1s, len(self.accelY_pred)))]
-
-                # Calculate average acceleration over 1 second
-                avg_accel_1s = sum(accelY_1s) / len(accelY_1s) if accelY_1s else 0
-
-                # Determine intensity based on average acceleration
-                if avg_accel_1s < -self.turn_thr2:
-                    return self.HARD_RIGHT
-                elif avg_accel_1s < -self.turn_thr1:
-                    return self.MILD_RIGHT
-            elif hard_right:
-                return self.HARD_RIGHT
-            elif mild_right:
-                return self.MILD_RIGHT
+            if minY < -self.turn_thr2:
+                return self.HARD_LEFT
+            elif minY < -self.turn_thr1:
+                return self.MILD_LEFT
 
         return self.NEUTRAL
 
@@ -178,11 +142,12 @@ class Decider:
         sub_decisions = [0, 0, 0, 0]
         sub_decisions[0] = self.stop()
         sub_decisions[1] = self.accelerate()
-        sub_decisions[2] = self.curve()
-        sub_decisions[3] = self.turn()
+        sub_decisions[2] = self.turn()
+        sub_decisions[3] = self.curve()
+
 
         for i, d in enumerate(sub_decisions):
-            if d >= decision:
+            if d > decision:
                 decision = d
                 source = self.events[i]
 

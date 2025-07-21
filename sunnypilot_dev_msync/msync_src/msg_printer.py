@@ -49,38 +49,38 @@ def print_model_v2(sub):
     if hasattr(sub, 'acceleration'):
         accel = sub.acceleration
         if hasattr(accel, 'x') and len(accel.x) > 0:
-            accel_x_values = [f'{accel.x[i]:.2f}' for i in range(min(11, len(accel.x)))]
-            print(f"Acceleration X: [{', '.join(accel_x_values)}...] m/s² (showing first {len(accel_x_values)})")
+            accel_x_values = [f'{accel.x[i]:.2f}' for i in range(min(15, len(accel.x)))]
+            print(f"Acceleration X: [{', '.join(accel_x_values)}...] m/s²")
         if hasattr(accel, 'y') and len(accel.y) > 0:
-            accel_y_values = [f'{accel.y[i]:.2f}' for i in range(min(11, len(accel.y)))]
-            print(f"Acceleration Y: [{', '.join(accel_y_values)}...] m/s² (showing first {len(accel_y_values)})")
-        if hasattr(accel, 'z') and len(accel.z) > 0:
-            accel_z_values = [f'{accel.z[i]:.2f}' for i in range(min(5, len(accel.z)))]
-            print(f"Acceleration Z: [{', '.join(accel_z_values)}...] m/s² (showing first {len(accel_z_values)})")
+            accel_y_values = [f'{accel.y[i]:.2f}' for i in range(min(33, len(accel.y)))]
+            print(f"Acceleration Y: [{', '.join(accel_y_values)}...] m/s²")
+        # if hasattr(accel, 'z') and len(accel.z) > 0:
+        #     accel_z_values = [f'{accel.z[i]:.2f}' for i in range(min(5, len(accel.z)))]
+        #     print(f"Acceleration Z: [{', '.join(accel_z_values)}...] m/s² (showing first {len(accel_z_values)})")
         if hasattr(accel, 't') and len(accel.t) > 0:
-            accel_t_values = [f'{accel.t[i]:.2f}' for i in range(min(11, len(accel.t)))]
-            print(f"Acceleration T: [{', '.join(accel_t_values)}...] s (showing first {len(accel_t_values)})")
+            accel_t_values = [f'{accel.t[i]:.2f}' for i in range(min(15, len(accel.t)))]
+            print(f"Acceleration T: [{', '.join(accel_t_values)}...] s")
 
-    # Lane Lines (4 lane lines, each with XYZTData struct containing x, y, z, t arrays)
-    if hasattr(sub, 'laneLines'):
-        for i, lane in enumerate(sub.laneLines):
-            print(f"Lane Line {i}:")
-            if hasattr(lane, 'x') and len(lane.x) > 0:
-                lane_x_values = [f'{lane.x[j]:.2f}' for j in range(min(3, len(lane.x)))]
-                print(f"  X: [{', '.join(lane_x_values)}...] m")
-            if hasattr(lane, 'y') and len(lane.y) > 0:
-                lane_y_values = [f'{lane.y[j]:.2f}' for j in range(min(3, len(lane.y)))]
-                print(f"  Y: [{', '.join(lane_y_values)}...] m")
-            if hasattr(lane, 'z') and len(lane.z) > 0:
-                lane_z_values = [f'{lane.z[j]:.2f}' for j in range(min(3, len(lane.z)))]
-                print(f"  Z: [{', '.join(lane_z_values)}...] m")
-            if hasattr(lane, 't') and len(lane.t) > 0:
-                lane_t_values = [f'{lane.t[j]:.2f}' for j in range(min(3, len(lane.t)))]
-                print(f"  T: [{', '.join(lane_t_values)}...] s")
+    # # Lane Lines (4 lane lines, each with XYZTData struct containing x, y, z, t arrays)
+    # if hasattr(sub, 'laneLines'):
+    #     for i, lane in enumerate(sub.laneLines):
+    #         print(f"Lane Line {i}:")
+    #         if hasattr(lane, 'x') and len(lane.x) > 0:
+    #             lane_x_values = [f'{lane.x[j]:.2f}' for j in range(min(3, len(lane.x)))]
+    #             print(f"  X: [{', '.join(lane_x_values)}...] m")
+    #         if hasattr(lane, 'y') and len(lane.y) > 0:
+    #             lane_y_values = [f'{lane.y[j]:.2f}' for j in range(min(3, len(lane.y)))]
+    #             print(f"  Y: [{', '.join(lane_y_values)}...] m")
+    #         if hasattr(lane, 'z') and len(lane.z) > 0:
+    #             lane_z_values = [f'{lane.z[j]:.2f}' for j in range(min(3, len(lane.z)))]
+    #             print(f"  Z: [{', '.join(lane_z_values)}...] m")
+    #         if hasattr(lane, 't') and len(lane.t) > 0:
+    #             lane_t_values = [f'{lane.t[j]:.2f}' for j in range(min(3, len(lane.t)))]
+    #             print(f"  T: [{', '.join(lane_t_values)}...] s")
 
-    # Lane Line Probabilities
-    if hasattr(sub, 'laneLineProbs'):
-        print(f"Lane Line Probs: [{', '.join([f'{p:.3f}' for p in sub.laneLineProbs])}]")
+    # # Lane Line Probabilities
+    # if hasattr(sub, 'laneLineProbs'):
+    #     print(f"Lane Line Probs: [{', '.join([f'{p:.3f}' for p in sub.laneLineProbs])}]")
 
     # Confidence
     if hasattr(sub, 'confidence'):
@@ -232,12 +232,12 @@ def print_car_state(sub):
     print("=== CarState ===")
 
     # Vehicle dynamics
-    if hasattr(sub, 'vEgo'):
-        print(f"vEgo: {sub.vEgo:.2f} m/s")
-    if hasattr(sub, 'aEgo'):
-        print(f"aEgo: {sub.aEgo:.2f} m/s²")
-    if hasattr(sub, 'yawRate'):
-        print(f"Yaw Rate: {sub.yawRate:.3f} rad/s")
+    # if hasattr(sub, 'vEgo'):
+    #     print(f"vEgo: {sub.vEgo:.2f} m/s")
+    # if hasattr(sub, 'aEgo'):
+    #     print(f"aEgo: {sub.aEgo:.2f} m/s²")
+    # if hasattr(sub, 'yawRate'):
+    #     print(f"Yaw Rate: {sub.yawRate:.3f} rad/s")
 
     # Gas pedal
     if hasattr(sub, 'gas'):
