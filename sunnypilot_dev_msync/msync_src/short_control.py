@@ -177,12 +177,12 @@ class Decider:
         source = 'None'
         sub_decisions = [0, 0, 0, 0]
         sub_decisions[0] = self.stop()
-        sub_decisions[1] = self.accelerate() # type: ignore
+        sub_decisions[1] = self.accelerate()
         sub_decisions[2] = self.curve()
         sub_decisions[3] = self.turn()
 
         for i, d in enumerate(sub_decisions):
-            if d > decision:
+            if d >= decision:
                 decision = d
                 source = self.events[i]
 
