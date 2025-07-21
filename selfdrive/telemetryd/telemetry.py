@@ -41,12 +41,13 @@ class channel:
       try:
         # s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         # s.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
+        print(f"Connecting to {ip}:{port}...")
         self.socket.connect((ip, port))
         # print(f"Connected to {ip}:{port}")
         # return s
         return
       except (OSError, socket.error) as e:
-        # print(f"Connection failed: {e}. Retrying in {retry_delay}s...")
+        print(f"Connection failed: {e}. Retrying in {retry_delay}s...")
         time.sleep(retry_delay)
 
 def main():
@@ -61,7 +62,8 @@ def main():
   TCP2_channel = channel("TCP2", "tcp2")
 
   while True:
-    TCP1_channel.connect("192.168.1.110", 9999, retry_delay=2)
+    TCP1_channel.connect("192.168.1.111", 9999, retry_delay=2)
+    # TCP2_channel.connect("192.168.1.110", 9998, retry_delay=2)
     tel_idx = 0
     try:
       while True:
