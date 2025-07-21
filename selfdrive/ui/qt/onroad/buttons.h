@@ -2,7 +2,11 @@
 
 #include <QPushButton>
 
+#ifdef SUNNYPILOT
+#include "selfdrive/ui/sunnypilot/ui.h"
+#else
 #include "selfdrive/ui/ui.h"
+#endif
 
 const int btn_size = 192;
 const int img_size = (btn_size / 4) * 3;
@@ -12,13 +16,17 @@ class ExperimentalButton : public QPushButton {
 
 public:
   explicit ExperimentalButton(QWidget *parent = 0);
-  void updateState(const UIState &s);
+  virtual void updateState(const UIState &s);
 
 private:
   void paintEvent(QPaintEvent *event) override;
   void changeMode();
 
   Params params;
+
+protected:
+  virtual void drawButton(QPainter &p);
+
   QPixmap engage_img;
   QPixmap experimental_img;
   bool experimental_mode;

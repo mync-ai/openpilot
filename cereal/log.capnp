@@ -2604,16 +2604,16 @@ struct Event {
     # DO change the name of the field and struct
     # DON'T change the ID (e.g. @107)
     # DON'T change which struct it points to
-    customReserved0 @107 :Custom.CustomReserved0;
-    customReserved1 @108 :Custom.CustomReserved1;
-    customReserved2 @109 :Custom.CustomReserved2;
-    customReserved3 @110 :Custom.CustomReserved3;
-    customReserved4 @111 :Custom.CustomReserved4;
-    customReserved5 @112 :Custom.CustomReserved5;
-    customReserved6 @113 :Custom.CustomReserved6;
-    customReserved7 @114 :Custom.CustomReserved7;
-    customReserved8 @115 :Custom.CustomReserved8;
-    customReserved9 @116 :Custom.CustomReserved9;
+    selfdriveStateSP @107 :Custom.SelfdriveStateSP;
+    modelManagerSP @108 :Custom.ModelManagerSP;
+    longitudinalPlanSP @109 :Custom.LongitudinalPlanSP;
+    onroadEventsSP @110 :Custom.OnroadEventSP;
+    carParamsSP @111 :Custom.CarParamsSP;
+    carControlSP @112 :Custom.CarControlSP;
+    backupManagerSP @113 :Custom.BackupManagerSP;
+    carStateSP @114 :Custom.CarStateSP;
+    liveMapDataSP @115 :Custom.LiveMapDataSP;
+    seatControl @116 :Custom.SeatControl;
     customReserved10 @136 :Custom.CustomReserved10;
     customReserved11 @137 :Custom.CustomReserved11;
     customReserved12 @138 :Custom.CustomReserved12;

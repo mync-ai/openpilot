@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 import math
+import threading
+import time
 from typing import SupportsFloat
 
 from cereal import car, log
@@ -19,6 +21,8 @@ from openpilot.selfdrive.controls.lib.latcontrol_torque import LatControlTorque
 from openpilot.selfdrive.controls.lib.longcontrol import LongControl
 from openpilot.selfdrive.locationd.helpers import PoseCalibrator, Pose
 
+from openpilot.sunnypilot.selfdrive.controls.controlsd_ext import ControlsExt
+
 State = log.SelfdriveState.OpenpilotState
 LaneChangeState = log.LaneChangeState
 LaneChangeDirection = log.LaneChangeDirection
@@ -26,19 +30,23 @@ LaneChangeDirection = log.LaneChangeDirection
 ACTUATOR_FIELDS = tuple(car.CarControl.Actuators.schema.fields.keys())
 
 
-class Controls:
+class Controls(ControlsExt):
   def __init__(self) -> None:
     self.params = Params()
     cloudlog.info("controlsd is waiting for CarParams")
     self.CP = messaging.log_from_bytes(self.params.get("CarParams", block=True), car.CarParams)
     cloudlog.info("controlsd got CarParams")
 
-    self.CI = interfaces[self.CP.carFingerprint](self.CP)
+    # Initialize sunnypilot controlsd extension
+    ControlsExt.__init__(self, self.CP, self.params)
+
+    self.CI = interfaces[self.CP.carFingerprint](self.CP, self.CP_SP)
 
     self.sm = messaging.SubMaster(['liveParameters', 'liveTorqueParameters', 'modelV2', 'selfdriveState',
                                    'liveCalibration', 'livePose', 'longitudinalPlan', 'carState', 'carOutput',
-                                   'driverMonitoringState', 'onroadEvents', 'driverAssistance'], poll='selfdriveState')
-    self.pm = messaging.PubMaster(['carControl', 'controlsState'])
+                                   'driverMonitoringState', 'onroadEvents', 'driverAssistance', 'liveDelay'] + self.sm_services_ext,
+                                  poll='selfdriveState')
+    self.pm = messaging.PubMaster(['carControl', 'controlsState'] + self.pm_services_ext)
 
     self.steer_limited_by_controls = False
     self.curvature = 0.0
@@ -51,11 +59,11 @@ class Controls:
     self.VM = VehicleModel(self.CP)
     self.LaC: LatControl
     if self.CP.steerControlType == car.CarParams.SteerControlType.angle:
-      self.LaC = LatControlAngle(self.CP, self.CI)
+      self.LaC = LatControlAngle(self.CP, self.CP_SP, self.CI)
     elif self.CP.lateralTuning.which() == 'pid':
-      self.LaC = LatControlPID(self.CP, self.CI)
+      self.LaC = LatControlPID(self.CP, self.CP_SP, self.CI)
     elif self.CP.lateralTuning.which() == 'torque':
-      self.LaC = LatControlTorque(self.CP, self.CI)
+      self.LaC = LatControlTorque(self.CP, self.CP_SP, self.CI)
 
   def update(self):
     self.sm.update(15)
@@ -84,6 +92,10 @@ class Controls:
         self.LaC.update_live_torque_params(torque_params.latAccelFactorFiltered, torque_params.latAccelOffsetFiltered,
                                            torque_params.frictionCoefficientFiltered)
 
+      self.LaC.extension.update_model_v2(self.sm['modelV2'])
+      calculated_lag = self.LaC.extension.lagd_torqued_main(self.CP, self.sm['liveDelay'])
+      self.LaC.extension.update_lateral_lag(calculated_lag)
+
     long_plan = self.sm['longitudinalPlan']
     model_v2 = self.sm['modelV2']
 
@@ -92,7 +104,11 @@ class Controls:
 
     # Check which actuators can be enabled
     standstill = abs(CS.vEgo) <= max(self.CP.minSteerSpeed, 0.3) or CS.standstill
-    CC.latActive = self.sm['selfdriveState'].active and not CS.steerFaultTemporary and not CS.steerFaultPermanent and \
+
+    # Get which state to use for active lateral control
+    _lat_active = self.get_lat_active(self.sm)
+
+    CC.latActive = _lat_active and not CS.steerFaultTemporary and not CS.steerFaultPermanent and \
                    (not standstill or self.CP.steerAtStandstill)
     CC.longActive = CC.enabled and not any(e.overrideLongitudinal for e in self.sm['onroadEvents']) and self.CP.openpilotLongitudinalControl
 
@@ -210,13 +226,27 @@ class Controls:
     cc_send.carControl = CC
     self.pm.send('carControl', cc_send)
 
+  def params_thread(self, evt):
+    while not evt.is_set():
+      self.get_params_sp()
+
+      time.sleep(0.1)
+
   def run(self):
     rk = Ratekeeper(100, print_delay_threshold=None)
-    while True:
-      self.update()
-      CC, lac_log = self.state_control()
-      self.publish(CC, lac_log)
-      rk.monitor_time()
+    e = threading.Event()
+    t = threading.Thread(target=self.params_thread, args=(e,))
+    try:
+      t.start()
+      while True:
+        self.update()
+        CC, lac_log = self.state_control()
+        self.publish(CC, lac_log)
+        self.run_ext(self.sm, self.pm)
+        rk.monitor_time()
+    finally:
+      e.set()
+      t.join()
 
 
 def main():

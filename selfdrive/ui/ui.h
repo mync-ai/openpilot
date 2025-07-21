@@ -42,12 +42,16 @@ typedef enum UIStatus {
   STATUS_DISENGAGED,
   STATUS_OVERRIDE,
   STATUS_ENGAGED,
+  STATUS_LAT_ONLY,
+  STATUS_LONG_ONLY,
 } UIStatus;
 
 const QColor bg_colors [] = {
   [STATUS_DISENGAGED] = QColor(0x17, 0x33, 0x49, 0xc8),
   [STATUS_OVERRIDE] = QColor(0x91, 0x9b, 0x95, 0xf1),
   [STATUS_ENGAGED] = QColor(0x17, 0x86, 0x44, 0xf1),
+  [STATUS_LAT_ONLY] = QColor(0x00, 0xc8, 0xc8, 0xf1),
+  [STATUS_LONG_ONLY] = QColor(0x96, 0x1C, 0xA8, 0xf1),
 };
 
 typedef struct UIScene {
@@ -67,8 +71,8 @@ class UIState : public QObject {
 
 public:
   UIState(QObject* parent = 0);
-  void updateStatus();
-  inline bool engaged() const {
+  virtual void updateStatus();
+  virtual inline bool engaged() const {
     return scene.started && (*sm)["selfdriveState"].getSelfdriveState().getEnabled();
   }
 
@@ -83,16 +87,20 @@ signals:
   void offroadTransition(bool offroad);
   void engagedChanged(bool engaged);
 
-private slots:
-  void update();
+protected slots:
+  virtual void update();
+
+protected:
+  QTimer *timer;
 
 private:
-  QTimer *timer;
   bool started_prev = false;
   bool engaged_prev = false;
 };
 
+#ifndef SUNNYPILOT
 UIState *uiState();
+#endif
 
 // device management class
 class Device : public QObject {
@@ -105,7 +113,7 @@ public:
     offroad_brightness = std::clamp(brightness, 0, 100);
   }
 
-private:
+protected:
   bool awake = false;
   int interactive_timeout = 0;
   bool ignition_on = false;
@@ -128,5 +136,10 @@ public slots:
   void update(const UIState &s);
 };
 
+#ifndef SUNNYPILOT
 Device *device();
+#endif
+
 void ui_update_params(UIState *s);
+void update_state(UIState *s);
+void update_sockets(UIState *s);

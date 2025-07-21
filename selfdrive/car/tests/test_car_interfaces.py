@@ -4,7 +4,7 @@ import hypothesis.strategies as st
 from hypothesis import Phase, given, settings
 from parameterized import parameterized
 
-from cereal import car
+from cereal import car, custom
 from opendbc.car import DT_CTRL
 from opendbc.car.car_helpers import interfaces
 from opendbc.car.structs import CarParams
@@ -12,11 +12,14 @@ from opendbc.car.tests.test_car_interfaces import get_fuzzy_car_interface_args
 from opendbc.car.fw_versions import FW_VERSIONS, FW_QUERY_CONFIGS
 from opendbc.car.mock.values import CAR as MOCK
 from opendbc.car.values import PLATFORMS
+from openpilot.selfdrive.car.helpers import convert_carControlSP
 from openpilot.selfdrive.controls.lib.latcontrol_angle import LatControlAngle
 from openpilot.selfdrive.controls.lib.latcontrol_pid import LatControlPID
 from openpilot.selfdrive.controls.lib.latcontrol_torque import LatControlTorque
 from openpilot.selfdrive.controls.lib.longcontrol import LongControl
 from openpilot.selfdrive.test.fuzzy_generation import FuzzyGenerator
+
+from openpilot.sunnypilot.selfdrive.car import interfaces as sunnypilot_interfaces
 
 ALL_ECUS = {ecu for ecus in FW_VERSIONS.values() for ecu in ecus.keys()}
 ALL_ECUS |= {ecu for config in FW_QUERY_CONFIGS.values() for ecu in config.extra_ecus}
@@ -40,9 +43,13 @@ class TestCarInterfaces:
 
     car_params = CarInterface.get_params(car_name, args['fingerprints'], args['car_fw'],
                                          alpha_long=args['alpha_long'], is_release=False, docs=False)
+    car_params_sp = CarInterface.get_params_sp(car_params, car_name, args['fingerprints'], args['car_fw'],
+                                               alpha_long=args['alpha_long'], docs=False)
     car_params = car_params.as_reader()
-    car_interface = CarInterface(car_params)
+    car_interface = CarInterface(car_params, car_params_sp)
+    sunnypilot_interfaces.setup_interfaces(car_interface)
     assert car_params
+    assert car_params_sp
     assert car_interface
 
     assert car_params.mass > 1
@@ -69,13 +76,16 @@ class TestCarInterfaces:
         assert not math.isnan(tune.torque.friction) and tune.torque.friction > 0
 
     cc_msg = FuzzyGenerator.get_random_msg(data.draw, car.CarControl, real_floats=True)
+    cc_sp_msg = FuzzyGenerator.get_random_msg(data.draw, custom.CarControlSP, real_floats=True)
     # Run car interface
     now_nanos = 0
     CC = car.CarControl.new_message(**cc_msg)
     CC = CC.as_reader()
+    CC_SP = custom.CarControlSP.new_message(**cc_sp_msg)
+    CC_SP = convert_carControlSP(CC_SP.as_reader())
     for _ in range(10):
       car_interface.update([])
-      car_interface.apply(CC, now_nanos)
+      car_interface.apply(CC, CC_SP, now_nanos)
       now_nanos += DT_CTRL * 1e9  # 10 ms
 
     CC = car.CarControl.new_message(**cc_msg)
@@ -85,7 +95,7 @@ class TestCarInterfaces:
     CC = CC.as_reader()
     for _ in range(10):
       car_interface.update([])
-      car_interface.apply(CC, now_nanos)
+      car_interface.apply(CC, CC_SP, now_nanos)
       now_nanos += DT_CTRL * 1e9  # 10ms
 
     # Test controller initialization
@@ -93,8 +103,8 @@ class TestCarInterfaces:
     #  hypothesis also slows down significantly with just one more message draw
     LongControl(car_params)
     if car_params.steerControlType == CarParams.SteerControlType.angle:
-      LatControlAngle(car_params, car_interface)
+      LatControlAngle(car_params, car_params_sp, car_interface)
     elif car_params.lateralTuning.which() == 'pid':
-      LatControlPID(car_params, car_interface)
+      LatControlPID(car_params, car_params_sp, car_interface)
     elif car_params.lateralTuning.which() == 'torque':
-      LatControlTorque(car_params, car_interface)
+      LatControlTorque(car_params, car_params_sp, car_interface)

@@ -8,6 +8,18 @@
 #include "selfdrive/ui/qt/widgets/ssh_keys.h"
 #include "selfdrive/ui/qt/widgets/toggle.h"
 
+#ifdef SUNNYPILOT
+#include "selfdrive/ui/sunnypilot/qt/widgets/controls.h"
+#define ButtonControl ButtonControlSP
+#define MultiButtonControl MultiButtonControlSP
+#define ElidedLabel ElidedLabelSP
+#define LabelControl LabelControlSP
+#define ListWidget ListWidgetSP
+#define ToggleControl ToggleControlSP
+#else
+#include "selfdrive/ui/qt/widgets/controls.h"
+#endif
+
 class WifiItem : public QWidget {
   Q_OBJECT
 public:
@@ -87,7 +99,7 @@ public:
   void setPrimeType(PrimeState::Type type);
   WifiManager* wifi = nullptr;
 
-private:
+protected:
   QStackedLayout* main_layout = nullptr;
   QWidget* wifiScreen = nullptr;
   AdvancedNetworking* an = nullptr;

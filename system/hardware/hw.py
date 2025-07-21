@@ -63,3 +63,24 @@ class Paths:
     if PC and platform.system() == "Darwin":
       return "/tmp"  # This is not really shared memory on macOS, but it's the closest we can get
     return "/dev/shm"
+
+  @staticmethod
+  def model_root() -> str:
+    if PC:
+      return str(Path(Paths.comma_home()) / "media" / "0" / "models")
+    else:
+      return "/data/media/0/models"
+
+  @staticmethod
+  def crash_log_root() -> str:
+    if PC:
+      return str(Path(Paths.comma_home()) / "community" / "crashes")
+    else:
+      return "/data/community/crashes"
+
+  @staticmethod
+  def mapd_root() -> str:
+    if PC:
+      return str(Path(Paths.comma_home()) / "media" / "0" / "osm")
+    else:
+      return "/data/media/0/osm"
