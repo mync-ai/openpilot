@@ -9,7 +9,6 @@ to the messaging system for UI display.
 import argparse
 import sys
 import os
-print("Current working directory:", os.getcwd())
 import signal
 import time
 

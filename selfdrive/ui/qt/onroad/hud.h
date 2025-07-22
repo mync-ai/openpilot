@@ -20,7 +20,10 @@ public:
 protected:
   void drawSetSpeed(QPainter &p, const QRect &surface_rect);
   void drawCurrentSpeed(QPainter &p, const QRect &surface_rect);
+  void drawSeatControlCommand(QPainter &p, const QRect &surface_rect);
   void drawText(QPainter &p, int x, int y, const QString &text, int alpha = 255);
+  void drawColoredText(QPainter &p, int x, int y, const QString &text, QColor color, int alpha = 200);
+  void updateSeatControlState(const SubMaster &sm);
 
   float speed = 0;
   float set_speed = 0;
@@ -29,4 +32,8 @@ protected:
   bool is_metric = false;
   bool v_ego_cluster_seen = false;
   int status = STATUS_DISENGAGED;
+
+  // Seat control display
+  QString seat_control_command = "NEUTRAL";
+  QString seat_control_source = "None";
 };
