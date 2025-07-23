@@ -25,11 +25,13 @@ class Decider:
         self.vel = 0
         self.stopped = True
         self.state = self.NEUTRAL
+        self.last_event = 'None'
         self.turn_thr1 = turn_thresh_1
         self.turn_thr2 = turn_thresh_2
         self.long_thr = long_thresh
         self.lft_blnk = 0
         self.rght_blnk = 0
+        self.preds = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
         self.update_state()
 
     def set_data(self, new_data):
@@ -44,17 +46,22 @@ class Decider:
         self.rght_blnk = new_data['right_blinker']
         self.vel = new_data['vEgo']
         self.accel = new_data['aEgo']
+
         self.update_state()
 
-    def update_state(self):
+    def update_state(self, decision=-1):
         """
         Updates the stopped/driving status based on ego motion.
         """
-        if self.vel > 0.02:
+        if self.vel > 0.05:
             self.stopped = False
         else:
             self.stopped = True
-        return
+
+        if decision > -1:
+            self.preds.pop(0)
+            self.preds.append(decision)
+        return (self.preds[-1] == self.preds[-2] == self.preds[-3]) # smoothing filter
 
     def curve(self):
         maxY = max(self.accelY_pred)
@@ -133,7 +140,13 @@ class Decider:
     def accelerate(self):
         maxX = max(self.accelX_pred)
         if maxX > self.long_thr:
-            return self.FORWARD
+            if self.stopped:
+                if self.lft_blnk:
+                    return self.MILD_LEFT
+                if self.rght_blnk:
+                    return self.MILD_RIGHT
+            else:
+                return self.FORWARD
         return self.NEUTRAL
 
     def short_decision(self):
@@ -144,12 +157,19 @@ class Decider:
         sub_decisions[1] = self.accelerate()
         sub_decisions[2] = self.turn()
         sub_decisions[3] = self.curve()
-
+        prediction = self.state
 
         for i, d in enumerate(sub_decisions):
             if d > decision:
                 decision = d
                 source = self.events[i]
 
-        self.state = decision
-        return self.commands[decision], source
+        if (self.update_state(decision=decision)):
+            prediction = decision
+            self.last_event = source
+        else:
+            source = self.last_event
+
+        self.state = prediction
+
+        return self.commands[prediction], source

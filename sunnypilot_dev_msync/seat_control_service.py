@@ -28,7 +28,7 @@ def main():
     global publisher
 
     parser = argparse.ArgumentParser(description='Seat Control Service')
-    parser.add_argument('--frequency', type=int, default=10, help='Update frequency in Hz')
+    parser.add_argument('--frequency', type=int, default=20, help='Update frequency in Hz')
     args = parser.parse_args()
 
     # Set up signal handlers for graceful shutdown

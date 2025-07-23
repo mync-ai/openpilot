@@ -86,7 +86,7 @@ def execute_control(interesting_subs=['modelV2', 'carState'], latency=0.5):
 
 
 if __name__ == "__main__":
-    latency = 0.1  # seconds, change as needed
+    latency = 0.05  # seconds, change as needed
 
     # Parsing options: 'modelV2', 'longitudinalPlan', 'radarState', 'carControl', 'carState'
     interesting_subs = ['modelV2', 'carState']
