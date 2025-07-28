@@ -68,7 +68,7 @@ def execute_control(interesting_subs=['modelV2', 'carState'], latency=0.5):
 
     print("Starting seat control execution...")
     sm = messaging.SubMaster(interesting_subs)
-    decider = short_control.Decider(turn_thresh_1=1.0, turn_thresh_2=2.5, long_thresh=1.0)
+    decider = short_control.Decider(turn_thresh_1=1.0, turn_thresh_2=2.5, long_thresh=1.0, smoothing_window=4)
     while True:
         sm.update()
 
