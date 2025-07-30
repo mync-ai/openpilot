@@ -91,18 +91,14 @@ class SeatControlPublisher:
             print(f"Seat control publisher error: {e}")
 
 
-# Global instance
-seat_control_publisher = SeatControlPublisher()
-
-
-def start_seat_control_publisher():
+def start_seat_control_publisher(publisher):
     """Start the seat control publisher."""
-    seat_control_publisher.start()
+    publisher.start()
 
 
-def stop_seat_control_publisher():
+def stop_seat_control_publisher(publisher):
     """Stop the seat control publisher."""
-    seat_control_publisher.stop()
+    publisher.stop()
 
 
 if __name__ == "__main__":

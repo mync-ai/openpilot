@@ -70,27 +70,31 @@ def extract_data(sm, interesting_subs):
 def execute_control(decider, submaster, interesting_subs=['modelV2', 'carState'], latency=0.5):
     """
     Execute control loop that listens to topics, extracts data, and calls seat_control.
-    Args:
-        decider: The seat control decision maker
-        submaster: The SubMaster instance to use for receiving messages
-        interesting_subs: List of topics to subscribe to
-        latency: Time between control updates in seconds
-    Returns:
-        Control response at the specified latency rate
     """
-
     print("Starting seat control execution...")
     while True:
         submaster.update()
 
         # Extract data from subscribed topics
         data = extract_data(submaster, interesting_subs)
-        # Check for None values in the data
-        if not any(value is None for value in data.values()):
+
+        # Only check for essential data that we actually need
+        required_data = ['acceleration_pred', 'velocity_pred', 'left_blinker', 'right_blinker', 'vEgo', 'aEgo']
+        has_required_data = all(data.get(key) is not None for key in required_data)
+
+        if has_required_data:
+            # Set default values for plan data if not available
+            if data['acceleration_plan'] is None:
+                data['acceleration_plan'] = data['acceleration_pred']  # Use pred as fallback
+            if data['velocity_plan'] is None:
+                data['velocity_plan'] = data['velocity_pred']  # Use pred as fallback
+
             decider.set_data(data)
             # Call seat control with extracted data
             response = decider.short_decision()
             yield response
+        # else:
+        #     print(f"Missing required data: {[key for key in required_data if data.get(key) is None]}")
 
         # Sleep for specified latency
         time.sleep(latency)

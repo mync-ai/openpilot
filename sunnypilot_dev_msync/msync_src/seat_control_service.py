@@ -27,7 +27,7 @@ def signal_handler(signum, frame):
 
 
 def run_service(frequency=20, turn_thresh_1=1.0, turn_thresh_2=2.5, long_thresh=1.0, smoothing_window=4,
-                use_plan=False, topics=['carState', 'carControl', 'modelV2', 'longitudinalPlan', 'radarState']):
+                horizon=3.0, use_plan=False, topics=['carState', 'carControl', 'modelV2', 'longitudinalPlan', 'radarState']):
     global publisher
 
     # Create SubMaster with specified topics
@@ -38,6 +38,7 @@ def run_service(frequency=20, turn_thresh_1=1.0, turn_thresh_2=2.5, long_thresh=
         turn_thresh_2=turn_thresh_2,
         long_thresh=long_thresh,
         smoothing_window=smoothing_window,
+        horizon=horizon,
         use_plan=use_plan
     )
     signal.signal(signal.SIGINT, signal_handler)
@@ -65,6 +66,7 @@ def main():
     parser.add_argument('--turn-thresh-1', type=float, default=1.0, help='First turn threshold')
     parser.add_argument('--turn-thresh-2', type=float, default=2.5, help='Second turn threshold')
     parser.add_argument('--long-thresh', type=float, default=1.0, help='Longitudinal threshold')
+    parser.add_argument('--horizon', type=float, default=2.5, help='Horizon for planning/prediction')
     parser.add_argument('--smoothing-window', type=int, default=4, help='Smoothing window size')
     parser.add_argument('--use-plan', action='store_true', default=False,
                        help='Use plan data instead of prediction data for longitudinal decisions')
@@ -78,6 +80,7 @@ def main():
         turn_thresh_2=args.turn_thresh_2,
         long_thresh=args.long_thresh,
         smoothing_window=args.smoothing_window,
+        horizon=args.horizon,
         use_plan=args.use_plan,
         topics=args.topics
     )

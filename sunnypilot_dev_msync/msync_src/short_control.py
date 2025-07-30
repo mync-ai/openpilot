@@ -70,11 +70,11 @@ class Decider:
         self.velX_pred = [new_data['velocity_pred'].x[i] for i in range(min(self.ind_pred, len(new_data['velocity_pred'].x)))]
         self.velY_pred = [new_data['velocity_pred'].y[i] for i in range(min(self.ind_pred, len(new_data['velocity_pred'].y)))]
 
-        self.accelX_plan = [new_data['acceleration_plan'].x[i] for i in range(min(self.ind_plan, len(new_data['acceleration_plan'].x)))]
-        self.velX_plan = [new_data['velocity_plan'].x[i] for i in range(min(self.ind_plan, len(new_data['velocity_plan'].x)))]
-
-        # Extend X_plan vectors if horizon exceeds 2.5 seconds
-        self.extend_plan(new_data)
+        if self.use_plan:
+            self.accelX_plan = [new_data['acceleration_plan'].x[i] for i in range(min(self.ind_plan, len(new_data['acceleration_plan'].x)))]
+            self.velX_plan = [new_data['velocity_plan'].x[i] for i in range(min(self.ind_plan, len(new_data['velocity_plan'].x)))]
+            self.extend_plan(new_data)
+            # Extend X_plan vectors if horizon exceeds 2.5 seconds
 
         self.lft_blnk = new_data['left_blinker']
         self.rght_blnk = new_data['right_blinker']
