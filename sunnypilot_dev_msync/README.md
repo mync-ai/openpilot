@@ -77,7 +77,7 @@ struct SeatControl {
 ### Running the Seat Control Service
 
 ```bash
-# Start the service with default 10Hz update rate
+# Start the service with default 20Hz update rate
 python sunnypilot_dev_msync/seat_control_service.py
 
 # Start with custom frequency

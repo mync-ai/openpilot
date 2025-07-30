@@ -12,20 +12,28 @@ class Decider:
     HARD_LEFT = 5
     HARD_RIGHT = 6
 
+    PLAN_TIME = [0.0, 0.156, 0.312, 0.468, 0.625, 0.781, 0.937, 1.093, 1.25, 1.406, 1.562, 1.718, 1.875, 2.031, 2.187, 2.343, 2.5]
+    PRED_TIME = [0, 0.009, 0.039, 0.087, 0.156, 0.244, 0.351, 0.478, 0.625, 0.791, 0.976, 1.181, 1.406, 1.650, 1.914, 2.197, 2.5,
+                 2.822, 3.164, 3.525, 3.906, 4.306, 4.726, 5.166, 5.625, 6.103, 6.601, 7.119, 7.656, 8.212, 8.789, 9.384, 10]
+
     commands = ['NEUTRAL', 'FORWARD', 'BACK', 'MILD_LEFT', 'MILD_RIGHT', 'HARD_LEFT', 'HARD_RIGHT']
     events = ['STOP', 'ACCELERATE', 'TURN', 'CURVE']
 
-    def __init__(self, turn_thresh_1=1.5, turn_thresh_2=5.0, long_thresh=2.0, smoothing_window=3):
+    def __init__(self, turn_thresh_1=1.5, turn_thresh_2=5.0, long_thresh=2.0, smoothing_window=3, horizon=3.0, use_plan=False):
         self.accelX_pred = []
         self.accelY_pred = []
         self.velX_pred = []
         self.velY_pred = []
+        self.long_plan = []
+        self.accel_plan = []
+        self.vel_plan = []
         self.kinetime = []
         self.accel = 0
         self.vel = 0
         self.stopped = True
         self.state = self.NEUTRAL
         self.last_event = 'None'
+        self.use_plan = use_plan
         self.turn_thr1 = turn_thresh_1
         self.turn_thr2 = turn_thresh_2
         self.long_thr = long_thresh
@@ -33,15 +41,40 @@ class Decider:
         self.rght_blnk = 0
         self.preds = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
         self.smoothing_window = smoothing_window
+        self.horizon = horizon
         self.update_state()
+        self.ind_pred = self.compute_horizon_indices(self.PRED_TIME)
+        self.ind_plan = self.compute_horizon_indices(self.PLAN_TIME)
+
+    def compute_horizon_indices(self, time_vec):
+        """
+        Compute the index in the time vector where the time first exceeds the specified horizon.
+
+        Args:
+            time_vec (list or array-like): Sequence of time values.
+
+        Returns:
+            int: Index of the first element in time_vec greater than self.horizon. If none, returns the length of time_vec.
+        """
+
+        # Find index where time exceeds horizon for predictions
+        indices = next((i for i, t in enumerate(time_vec) if t > self.horizon), len(time_vec))
+
+        # For now, use same horizon for plan data - could be different in future
+
+        return indices
 
     def set_data(self, new_data):
-        self.kinetime = new_data['acceleration_pred'].t
-        ind_3s = next((i for i, t in enumerate(self.kinetime) if t > 3), len(self.kinetime))
-        self.accelX_pred = [new_data['acceleration_pred'].x[i] for i in range(min(ind_3s, len(new_data['acceleration_pred'].x)))]
-        self.accelY_pred = [new_data['acceleration_pred'].y[i] for i in range(min(ind_3s, len(new_data['acceleration_pred'].y)))]
-        self.velX_pred = [new_data['velocity_pred'].x[i] for i in range(min(ind_3s, len(new_data['velocity_pred'].x)))]
-        self.velY_pred = [new_data['velocity_pred'].y[i] for i in range(min(ind_3s, len(new_data['velocity_pred'].y)))]
+        self.accelX_pred = [new_data['acceleration_pred'].x[i] for i in range(min(self.ind_pred, len(new_data['acceleration_pred'].x)))]
+        self.accelY_pred = [new_data['acceleration_pred'].y[i] for i in range(min(self.ind_pred, len(new_data['acceleration_pred'].y)))]
+        self.velX_pred = [new_data['velocity_pred'].x[i] for i in range(min(self.ind_pred, len(new_data['velocity_pred'].x)))]
+        self.velY_pred = [new_data['velocity_pred'].y[i] for i in range(min(self.ind_pred, len(new_data['velocity_pred'].y)))]
+
+        self.accelX_plan = [new_data['acceleration_plan'].x[i] for i in range(min(self.ind_plan, len(new_data['acceleration_plan'].x)))]
+        self.velX_plan = [new_data['velocity_plan'].x[i] for i in range(min(self.ind_plan, len(new_data['velocity_plan'].x)))]
+
+        # Extend X_plan vectors if horizon exceeds 2.5 seconds
+        self.extend_plan(new_data)
 
         self.lft_blnk = new_data['left_blinker']
         self.rght_blnk = new_data['right_blinker']
@@ -49,6 +82,32 @@ class Decider:
         self.accel = new_data['aEgo']
 
         self.update_state()
+
+    def extend_plan(self, new_data):
+        """
+        Extend X_plan vectors beyond 2.5 seconds using prediction data when horizon > 2.5s.
+
+        Combines plan data (first 2.5s) with prediction data (remaining time) to fill
+        the extended horizon period.
+        """
+        if self.horizon <= 2.5:
+            return
+
+        # Calculate how many additional elements we need from prediction data
+        additional_elements = self.ind_pred - self.ind_plan
+
+        if additional_elements > 0:
+            # Get the additional prediction elements starting from plan length
+            pred_start_idx = self.ind_plan
+            pred_end_idx = min(pred_start_idx + additional_elements, len(new_data['acceleration_pred'].x))
+
+            # Extend accelX_plan with prediction data
+            additional_accelX = [new_data['acceleration_pred'].x[i] for i in range(pred_start_idx, pred_end_idx)]
+            self.accelX_plan.extend(additional_accelX)
+
+            # Extend velX_plan with prediction data
+            additional_velX = [new_data['velocity_pred'].x[i] for i in range(pred_start_idx, min(pred_start_idx + additional_elements, len(new_data['velocity_pred'].x)))]
+            self.velX_plan.extend(additional_velX)
 
     def update_state(self, decision=-1):
         """
@@ -69,6 +128,18 @@ class Decider:
         if len(self.preds) < self.smoothing_window:
             return False
         return all(self.preds[-i] == self.preds[-1] for i in range(1, self.smoothing_window + 1))
+
+    def get_x_vectors(self):
+        """
+        Returns the appropriate X-direction vectors based on use_plan setting.
+
+        Returns:
+            tuple: (accelX, velX) - either prediction or plan vectors
+        """
+        if self.use_plan:
+            return self.accelX_plan, self.velX_plan
+        else:
+            return self.accelX_pred, self.velX_pred
 
     def curve(self):
         maxY = max(self.accelY_pred)
@@ -141,13 +212,15 @@ class Decider:
     def stop(self):
         if self.stopped:
             return self.NEUTRAL
-        minX = min(self.accelX_pred)
+        accelX, _ = self.get_x_vectors()
+        minX = min(accelX)
         if minX < -self.long_thr:
             return self.BACK
         return self.NEUTRAL
 
     def accelerate(self):
-        maxX = max(self.accelX_pred)
+        accelX, _ = self.get_x_vectors()
+        maxX = max(accelX)
         if maxX > self.long_thr:
             if self.stopped:
                 # Special case: if accelerating from stop with turn signal,
