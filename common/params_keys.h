@@ -201,4 +201,14 @@ inline static std::unordered_map<std::string, uint32_t> keys = {
     {"OsmStateTitle", PERSISTENT},
     {"OsmWayTest", PERSISTENT},
     {"RoadName", CLEAR_ON_ONROAD_TRANSITION},
+
+    // Seat Control params
+    {"SeatControlFrequency", PERSISTENT | BACKUP},
+    {"SeatControlTurnThresh1", PERSISTENT | BACKUP},
+    {"SeatControlTurnThresh2", PERSISTENT | BACKUP},
+    {"SeatControlLongThresh", PERSISTENT | BACKUP},
+    {"SeatControlSmoothingWindow", PERSISTENT | BACKUP},
+    {"SeatControlHorizon", PERSISTENT | BACKUP},
+    {"SeatControlUsePlan", PERSISTENT | BACKUP},
+    {"SeatControlConfigVersion", PERSISTENT},
 };

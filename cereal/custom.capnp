@@ -259,10 +259,27 @@ struct SeatControl @0xa1680744031fdb2d {
   }
 }
 
-struct CustomReserved10 @0xcb9fd56c7057593a {
+struct SeatControlConfig @0xcb9fd56c7057593a {
+  frequency @0 :UInt32;
+  turnThresh1 @1 :Float32;
+  turnThresh2 @2 :Float32;
+  longThresh @3 :Float32;
+  smoothingWindow @4 :UInt32;
+  horizon @5 :Float32;
+  usePlan @6 :Bool;
+  timestamp @7 :UInt64;
 }
 
-struct CustomReserved11 @0xc2243c65e0340384 {
+struct SeatControlConfigRequest @0xc2243c65e0340384 {
+  action @0 :ConfigAction;
+  config @1 :SeatControlConfig;
+  requestId @2 :UInt64;
+
+  enum ConfigAction {
+    get @0;
+    set @1;
+    reset @2;
+  }
 }
 
 struct CustomReserved12 @0x9ccdc8676701b412 {

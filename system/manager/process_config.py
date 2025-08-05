@@ -171,6 +171,7 @@ procs += [
 
   # seat control
   PythonProcess("seat_control", "sunnypilot_dev_msync.msync_src.seat_control_service", always_run),
+  PythonProcess("seat_control", "sunnypilot_dev_msync.msync_src.seat_control_service_enhanced", always_run),
 ]
 
 if os.path.exists("./github_runner.sh"):

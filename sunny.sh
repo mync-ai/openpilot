@@ -40,7 +40,7 @@ case "$MODE" in
     selfdrive/ui/ui "$@"
     ;;
   seat)
-    python sunnypilot_dev_msync/seat_control_service.py "$@"
+    python sunnypilot_dev_msync/msync_src/seat_control_service.py "$@"
     ;;
   *)
     echo "Unknown mode: $MODE" >&2
