@@ -30,7 +30,7 @@ class channel:
     self.socket = self.create_socket()
     # self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1) ?
     # self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1) ?
-  
+
   def create_socket(self):
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     s.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
@@ -57,7 +57,7 @@ def main():
   #     tel.log(25, (str(curr_milli_time())+" test_"+str(tel_idx)+'\n'))
   #     tel_idx += 1
   #     time.sleep(1)
-  
+
   TCP1_channel = channel("TCP1", "tcp1")
   TCP2_channel = channel("TCP2", "tcp2")
 
@@ -67,10 +67,10 @@ def main():
     tel_idx = 0
     try:
       while True:
-        acc,jerks = get_cereal_data()
-        print(f"Received: {acc}, {jerks}")
-        if acc and jerks:
-          msg = f" Acc: {acc}, Jerks: {jerks}"
+        cmd = get_short_control()
+        print(f"Received: {cmd}")
+        if cmd:
+          msg = cmd
         else:
           msg = " Invalid data"
         msg = str(curr_time())+msg
@@ -80,7 +80,7 @@ def main():
         TCP1_channel.socket.sendall(msg.encode('utf-8'))
         tel_idx += 1
         print(f"Sent: {tel_idx}")
-        time.sleep(0.1)
+        time.sleep(0.05)
     except (BrokenPipeError, ConnectionResetError, OSError) as e:
       print(f"Connection lost: {e}")
       TCP1_channel.socket.close()
