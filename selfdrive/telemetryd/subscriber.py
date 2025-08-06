@@ -1,7 +1,7 @@
 from openpilot.selfdrive.telemetryd.sub_fields import *
 import sys
 
-subscriptions = ['carState', 'controlsState', 'modelV2', 'longitudinalPlan']
+subscriptions = ['carState', 'controlsState', 'modelV2', 'longitudinalPlan', 'seatControl']
 # SubMaster subscribes to selected message types
 sm = messaging.SubMaster(subscriptions)
 
