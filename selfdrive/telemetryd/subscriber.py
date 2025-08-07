@@ -100,24 +100,24 @@ def get_cereal_data(interesting_subs=['longitudinalPlan', 'modelV2'], verbose=Fa
     return listen_plan(sm['longitudinalPlan'])
 
 def get_short_control():
+    cmd_out = "neutral"
     sm.update()
     if sm.updated['seatControl']:
-        cmd_map = {
-            0: "neutral",
-            1: "forward",
-            2: "back",
-            3: "left",
-            4: "right",
-            5: "left",
-            6: "right"
-        }
+        print(sm['seatControl'].command)
         cmd_val = sm['seatControl'].command
-        return cmd_map.get(cmd_val, "neutral")
+        if cmd_val == "mildLeft" or cmd_val == "hardLeft":
+            cmd_out = "left"
+        elif cmd_val == "mildRight" or cmd_val == "hardRight":
+            cmd_out = "right"
+        else:
+            cmd_out = cmd_val
+        print(f"cmd_val: {cmd_val}")
+        return cmd_out
 
-# if __name__ == "__main__":
-#     latency = 0.1  # seconds, change as needed
-#     interesting_subs = ['longitudinalPlan', 'modelV2']
-#     parse_messages(interesting_subs, latency)
+if __name__ == "__main__":
+    latency = 0.1  # seconds, change as needed
+    interesting_subs = ['longitudinalPlan', 'modelV2']
+    parse_messages(interesting_subs, latency, verbose=True)
 
 
 # Model Outputs:
