@@ -78,8 +78,8 @@ def main():
         # msg = str(curr_time())+" test_"+str(tel_idx)
 
         TCP1_channel.socket.sendall(msg.encode('utf-8'))
-        tel_idx += 1
-        print(f"Sent: {tel_idx}")
+        # tel_idx += 1
+        # print(f"Sent: {tel_idx}")
         time.sleep(0.05)
     except (BrokenPipeError, ConnectionResetError, OSError) as e:
       print(f"Connection lost: {e}")
