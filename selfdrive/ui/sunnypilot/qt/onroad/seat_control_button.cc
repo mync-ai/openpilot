@@ -32,8 +32,15 @@ SeatControlConfigDialog::SeatControlConfigDialog(QWidget *parent)
     QTimer::singleShot(0, this, [this, parent]() {
         QRect screenGeometry;
         if (parent && parent->window()) {
-            // Try to get the screen containing the parent window
-            screenGeometry = parent->window()->screen()->availableGeometry();
+            // Try to get the screen containing the parent window using QApplication
+            QWidget* topLevel = parent->window();
+            QScreen* screen = QApplication::screenAt(topLevel->geometry().center());
+            if (screen) {
+                screenGeometry = screen->availableGeometry();
+            } else {
+                // Fallback to primary screen
+                screenGeometry = QApplication::primaryScreen()->availableGeometry();
+            }
         } else {
             // Fallback to primary screen
             screenGeometry = QApplication::primaryScreen()->availableGeometry();
