@@ -109,8 +109,12 @@ def get_short_control():
             cmd_out = "left"
         elif cmd_val == "mildRight" or cmd_val == "hardRight":
             cmd_out = "right"
-        else:
-            cmd_out = cmd_val
+        elif cmd_val == "neutral":
+            cmd_out = "neutral"
+        elif cmd_val == "forward":
+            cmd_out = "forward"
+        elif cmd_val == "back":
+            cmd_out = "back"
         print(f"cmd_val: {cmd_val}")
         return cmd_out
 
