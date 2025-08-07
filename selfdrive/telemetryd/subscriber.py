@@ -103,7 +103,6 @@ def get_short_control():
     cmd_out = "neutral"
     sm.update()
     if sm.updated['seatControl']:
-        print(sm['seatControl'].command)
         cmd_val = sm['seatControl'].command
         if cmd_val == "mildLeft" or cmd_val == "hardLeft":
             cmd_out = "left"
@@ -115,7 +114,6 @@ def get_short_control():
             cmd_out = "forward"
         elif cmd_val == "back":
             cmd_out = "back"
-        print(f"cmd_val: {cmd_val}")
         return cmd_out
 
 if __name__ == "__main__":
