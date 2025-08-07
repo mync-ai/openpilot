@@ -170,7 +170,7 @@ procs += [
   PythonProcess("mapd_manager", "sunnypilot.mapd.mapd_manager", always_run),
 
   # seat control
-  PythonProcess("seat_control", "sunnypilot_dev_msync.msync_src.seat_control_service", always_run),
+  # PythonProcess("seat_control", "sunnypilot_dev_msync.msync_src.seat_control_service", always_run),
   PythonProcess("seat_control", "sunnypilot_dev_msync.msync_src.seat_control_service_enhanced", always_run),
 ]
 

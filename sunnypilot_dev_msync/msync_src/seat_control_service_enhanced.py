@@ -29,20 +29,27 @@ class EnhancedSeatControlService:
         self.publisher = None
         self.parameter_manager = SeatControlParameterManager()
 
+        # Initialize messaging attributes to None
+        self.config_pm = None
+        self.config_sm = None
+
         print("DEBUG: Initializing messaging...")
 
-        # Messaging for configuration requests
+        # Configuration publishing (responses) - Should work based on test
         try:
             self.config_pm = messaging.PubMaster(['seatControlConfig'])
             print("DEBUG: Created PubMaster for seatControlConfig")
         except Exception as e:
-            print(f"DEBUG: Error creating PubMaster: {e}")
+            print(f"DEBUG: Error creating PubMaster for seatControlConfig: {e}")
+            self.config_pm = None
 
+        # Configuration subscribing (requests) - Should work based on test
         try:
             self.config_sm = messaging.SubMaster(['seatControlConfigRequest'])
             print("DEBUG: Created SubMaster for seatControlConfigRequest")
         except Exception as e:
-            print(f"DEBUG: Error creating SubMaster: {e}")
+            print(f"DEBUG: Error creating SubMaster for seatControlConfigRequest: {e}")
+            self.config_sm = None
 
         # Main messaging for seat control
         self.topics = ['carState', 'carControl', 'modelV2', 'longitudinalPlan', 'radarState']
@@ -50,20 +57,22 @@ class EnhancedSeatControlService:
 
         # Load initial configuration
         if initial_config:
-            # Use provided config (from command line)
             self.current_config = initial_config
-            # Save to parameters for persistence
             success, error = self.parameter_manager.set_config(initial_config)
             if not success:
                 print(f"Warning: Could not save initial config: {error}")
         else:
-            # Load from stored parameters
             self.current_config = self.parameter_manager.get_current_config()
 
+        print(f"Seat control configuration updated: {self.current_config}")
         print(f"Initialized with config: {self.current_config}")
 
-        # Create initial components
-        self._create_components()
+        # Create components - this might be where the real issue is
+        try:
+            self._create_components()
+            print("DEBUG: Components created successfully")
+        except Exception as e:
+            print(f"DEBUG: Error creating components: {e}")
 
         # Setup signal handlers
         signal.signal(signal.SIGINT, self._signal_handler)
@@ -102,165 +111,148 @@ class EnhancedSeatControlService:
             raise
 
     def _restart_components(self):
-        """Restart components with new configuration."""
-        print("Restarting components with new configuration...")
+        """Restart all components with proper cleanup"""
+        import time
 
-        # Stop existing publisher
-        if self.publisher:
-            self.publisher.stop()
+        try:
+            print("Restarting components with new configuration...")
 
-        # Create new components
-        self._create_components()
+            # Stop current publisher
+            if self.publisher:
+                print("Stopping current publisher...")
+                self.publisher.stop()
+                self.publisher = None
+                time.sleep(0.5)  # Allow time for cleanup
 
-        # Start new publisher if service is running
-        if self.running and self.publisher:
-            self.publisher.start()
+            # Recreate components with new configuration
+            self._create_components()
 
-        print("Components restarted successfully")
+            # Restart publisher
+            if self.publisher:
+                print("Starting new publisher...")
+                self.publisher.start()
+
+            print("Component restart completed successfully")
+
+        except Exception as e:
+            print(f"Error during component restart: {e}")
+            raise
 
     def _handle_config_request(self):
         """Handle configuration requests from UI."""
         try:
+            # Check if we can receive config requests
+            if not self.config_sm:
+                return
+
             if not self.config_sm.updated['seatControlConfigRequest']:
                 return
 
             request = self.config_sm['seatControlConfigRequest']
 
-            # Debug: Print the message structure to understand how to access it
-            print(f"DEBUG: Raw request message: {request}")
-            print(f"DEBUG: Request type: {type(request)}")
-            print(f"DEBUG: Request attributes: {dir(request)}")
-
-            # Try different ways to access the data
+            # Try to access the request data
             try:
-                # Method 1: Direct access
-                print(f"DEBUG: Trying direct access...")
                 request_data = request
-
-                # Convert enum to string or int properly
                 action_enum = request_data.action
-                print(f"DEBUG: Action enum: {action_enum}, type: {type(action_enum)}")
 
-                # Convert enum to integer (Cap'n Proto enums have an ordinal value)
-                if hasattr(action_enum, 'raw'):
-                    action_value = action_enum.raw
-                elif str(action_enum) in ['get', 'set', 'reset']:
-                    action_names = ['get', 'set', 'reset']
-                    action_value = action_names.index(str(action_enum))
+                # Convert enum to string
+                action_str = str(action_enum)
+                if action_str == 'get':
+                    action_value = 0
+                elif action_str == 'set':
+                    action_value = 1
+                elif action_str == 'reset':
+                    action_value = 2
                 else:
-                    # Try to extract the ordinal value
-                    action_str = str(action_enum)
-                    if action_str == 'get':
-                        action_value = 0
-                    elif action_str == 'set':
-                        action_value = 1
-                    elif action_str == 'reset':
-                        action_value = 2
+                    action_value = 0  # default to get
+
+                action_names = ['get', 'set', 'reset']
+                action = action_names[action_value] if action_value < len(action_names) else 'unknown'
+
+                print(f"Received config request: action={action}")
+
+                if action == 'get':
+                    # Instead of publishing, write current config to a known location
+                    # that the UI can read from
+                    self._save_config_for_ui(self.current_config, request_data.requestId)
+
+                elif action == 'set':
+                    # Apply new configuration
+                    new_config = {
+                        'frequency': request_data.config.frequency,
+                        'turn_thresh_1': request_data.config.turnThresh1,
+                        'turn_thresh_2': request_data.config.turnThresh2,
+                        'long_thresh': request_data.config.longThresh,
+                        'smoothing_window': request_data.config.smoothingWindow,
+                        'horizon': request_data.config.horizon,
+                        'use_plan': request_data.config.usePlan
+                    }
+
+                    # Validate and save configuration
+                    success, error = self.parameter_manager.set_config(new_config)
+
+                    if success:
+                        old_config = self.current_config.copy()
+                        self.current_config = new_config
+
+                        try:
+                            self._restart_components()
+                            self._save_config_for_ui(self.current_config, request_data.requestId)
+                            print(f"Configuration updated successfully: {self.current_config}")
+                        except Exception as restart_error:
+                            print(f"Failed to restart components: {restart_error}")
+                            # Revert to old configuration
+                            self.current_config = old_config
+                            print("Reverted to previous configuration")
+                            self._save_config_for_ui(self.current_config, request_data.requestId,
+                                                   f"Configuration update failed: {str(restart_error)}")
                     else:
-                        action_value = 0  # default to get
+                        print(f"Configuration validation failed: {error}")
+                        self._save_config_for_ui(self.current_config, request_data.requestId, error)
 
-                print(f"DEBUG: Direct access successful, action: {action_value}")
-            except Exception as e1:
-                print(f"DEBUG: Direct access failed: {e1}")
-                try:
-                    # Method 2: Through seatControlConfigRequest
-                    print(f"DEBUG: Trying nested access...")
-                    request_data = request.seatControlConfigRequest
-
-                    action_enum = request_data.action
-                    if hasattr(action_enum, 'raw'):
-                        action_value = action_enum.raw
-                    elif str(action_enum) in ['get', 'set', 'reset']:
-                        action_names = ['get', 'set', 'reset']
-                        action_value = action_names.index(str(action_enum))
-                    else:
-                        action_str = str(action_enum)
-                        if action_str == 'get':
-                            action_value = 0
-                        elif action_str == 'set':
-                            action_value = 1
-                        elif action_str == 'reset':
-                            action_value = 2
-                        else:
-                            action_value = 0
-
-                    print(f"DEBUG: Nested access successful, action: {action_value}")
-                except Exception as e2:
-                    print(f"DEBUG: Nested access failed: {e2}")
-                    return
-
-            # Convert enum to string for comparison
-            action_names = ['get', 'set', 'reset']  # Matching the capnp enum order
-            action = action_names[action_value] if action_value < len(action_names) else 'unknown'
-
-            print(f"Received config request: action={action}")
-
-            if action == 'get':
-                # Send current configuration
-                self._publish_config_response(self.current_config, request_data.requestId)
-
-            elif action == 'set':
-                # Apply new configuration
-                new_config = {
-                    'frequency': request_data.config.frequency,
-                    'turn_thresh_1': request_data.config.turnThresh1,
-                    'turn_thresh_2': request_data.config.turnThresh2,
-                    'long_thresh': request_data.config.longThresh,
-                    'smoothing_window': request_data.config.smoothingWindow,
-                    'horizon': request_data.config.horizon,
-                    'use_plan': request_data.config.usePlan
-                }
-
-                # Validate and save configuration
-                success, error = self.parameter_manager.set_config(new_config)
-
-                if success:
-                    self.current_config = new_config
+                elif action == 'reset':
+                    # Reset to defaults
+                    self.parameter_manager.reset_to_defaults()
+                    self.current_config = self.parameter_manager.get_current_config()
                     self._restart_components()
-                    self._publish_config_response(self.current_config, request_data.requestId)
-                    print(f"Configuration updated: {self.current_config}")
-                else:
-                    print(f"Configuration validation failed: {error}")
-                    # Send current config as response (indicating failure)
-                    self._publish_config_response(self.current_config, request_data.requestId, error)
+                    self._save_config_for_ui(self.current_config, request_data.requestId)
+                    print("Configuration reset to defaults")
 
-            elif action == 'reset':
-                # Reset to defaults
-                self.parameter_manager.reset_to_defaults()
-                self.current_config = self.parameter_manager.get_current_config()
-                self._restart_components()
-                self._publish_config_response(self.current_config, request_data.requestId)
-                print("Configuration reset to defaults")
+            except Exception as e:
+                print(f"Error processing config request: {e}")
 
         except Exception as e:
             print(f"Error handling config request: {e}")
             import traceback
             traceback.print_exc()
 
-    def _publish_config_response(self, config, request_id, error_msg=None):
-        """Publish configuration response."""
+    def _save_config_for_ui(self, config, request_id, error_msg=None):
+        """Save configuration response to a file that the UI can read."""
         try:
-            response = messaging.new_message('seatControlConfig')
-            response.seatControlConfig.frequency = config['frequency']
-            response.seatControlConfig.turnThresh1 = config['turn_thresh_1']
-            response.seatControlConfig.turnThresh2 = config['turn_thresh_2']
-            response.seatControlConfig.longThresh = config['long_thresh']
-            response.seatControlConfig.smoothingWindow = config['smoothing_window']
-            response.seatControlConfig.horizon = config['horizon']
-            response.seatControlConfig.usePlan = config['use_plan']
-            response.seatControlConfig.timestamp = int(time.time() * 1e9)
+            import json
 
-            self.config_pm.send('seatControlConfig', response)
+            response_data = {
+                'requestId': request_id,
+                'timestamp': int(time.time() * 1e9),
+                'config': config,
+                'error': error_msg,
+                'success': error_msg is None
+            }
+
+            # Save to a temporary file that the UI can poll
+            response_file = '/tmp/seat_control_config_response.json'
+            with open(response_file, 'w') as f:
+                json.dump(response_data, f, indent=2)
+
+            print(f"Saved config response to {response_file}")
 
             if error_msg:
-                print(f"Sent config response with error: {error_msg}")
+                print(f"Config response with error: {error_msg}")
             else:
-                print(f"Sent config response: {config}")
+                print(f"Config response saved: {config}")
 
         except Exception as e:
-            print(f"Error publishing config response: {e}")
-            import traceback
-            traceback.print_exc()
+            print(f"Error saving config response: {e}")
 
     def start(self):
         """Start the seat control service."""
@@ -271,31 +263,38 @@ class EnhancedSeatControlService:
         self.running = True
 
         try:
-            print(f"Starting enhanced seat control service")
+            print("Starting enhanced seat control service")
             print(f"Configuration: {self.current_config}")
             print(f"Subscribed topics: {', '.join(self.topics)}")
+
+            # Check messaging status
+            if self.config_pm:
+                print("DEBUG: Configuration publisher available - can respond to UI requests")
+            else:
+                print("DEBUG: Configuration publisher unavailable - running in read-only mode")
+
+            if self.config_sm:
+                print("DEBUG: Configuration subscriber available - can receive UI requests")
+            else:
+                print("DEBUG: Cannot receive configuration requests")
 
             # Start publisher
             if self.publisher:
                 self.publisher.start()
+                print("DEBUG: Seat control publisher started")
 
             # Main service loop
-            loop_count = 0
             while self.running:
-                # Handle configuration requests
-                self.config_sm.update()
+                # Handle configuration requests (only if we have a subscriber)
+                if self.config_sm:
+                    self.config_sm.update()
 
-                loop_count += 1
-                if loop_count % 50 == 0:  # Print every 5 seconds (50 * 0.1s)
-                    print(f"DEBUG: Service loop active, updated topics: {list(self.config_sm.updated.keys())}")
-                    print(f"DEBUG: seatControlConfigRequest updated: {self.config_sm.updated.get('seatControlConfigRequest', False)}")
+                    # Debug: Check if we have any messages
+                    if 'seatControlConfigRequest' in self.config_sm.updated:
+                        if self.config_sm.updated['seatControlConfigRequest']:
+                            print("DEBUG: Received config request message")
 
-                # Debug: Check if we have any messages
-                if 'seatControlConfigRequest' in self.config_sm.updated:
-                    if self.config_sm.updated['seatControlConfigRequest']:
-                        print("DEBUG: Received config request message")
-
-                self._handle_config_request()
+                    self._handle_config_request()
 
                 # Small sleep to prevent excessive CPU usage
                 time.sleep(0.1)

@@ -44,18 +44,6 @@ class SeatControlParameterManager:
         'use_plan': (False, True)  # Boolean values
     }
 
-    # Parameter keys in the Params system
-    PARAM_KEYS = {
-        'frequency': 'SeatControlFrequency',
-        'turn_thresh_1': 'SeatControlTurnThresh1',
-        'turn_thresh_2': 'SeatControlTurnThresh2',
-        'long_thresh': 'SeatControlLongThresh',
-        'smoothing_window': 'SeatControlSmoothingWindow',
-        'horizon': 'SeatControlHorizon',
-        'use_plan': 'SeatControlUsePlan'
-    }
-
-    CONFIG_VERSION_KEY = 'SeatControlConfigVersion'
     CURRENT_VERSION = 1
 
     def __init__(self):
@@ -63,55 +51,62 @@ class SeatControlParameterManager:
         self.pm = messaging.PubMaster(['seatControlConfig'])
         self.sm = messaging.SubMaster(['seatControlConfigRequest'])
 
+        # Use a config file instead of individual params
+        self.config_file = '/tmp/seat_control_config.json'
+
         # Initialize parameters if they don't exist
         self._initialize_default_params()
 
     def _initialize_default_params(self):
         """Initialize parameters with default values if they don't exist."""
-        # Check if this is the first time or if version has changed
-        current_version = self.params.get('SeatControlConfigVersion', encoding='utf-8')
-        if current_version != str(self.CURRENT_VERSION):
+        # Load existing config or create defaults
+        config = self._load_config_from_file()
+        if config is None:
             print(f"Initializing seat control parameters (version {self.CURRENT_VERSION})")
             self.reset_to_defaults()
-            self.params.put('SeatControlConfigVersion', str(self.CURRENT_VERSION))
         else:
             # Ensure all parameters exist
             for param_name, default_value in self.DEFAULT_CONFIG.items():
-                if not self._param_exists(param_name):
-                    self._set_param(param_name, default_value)
-                    print(f"Set missing parameter {param_name} to default: {default_value}")
+                if param_name not in config:
+                    config[param_name] = default_value
+                    print(f"Added missing parameter {param_name} with default: {default_value}")
+            self._save_config_to_file(config)
+
+    def _load_config_from_file(self) -> Optional[Dict[str, Any]]:
+        """Load configuration from JSON file."""
+        try:
+            if os.path.exists(self.config_file):
+                with open(self.config_file, 'r') as f:
+                    return json.load(f)
+        except Exception as e:
+            print(f"Error loading config file: {e}")
+        return None
+
+    def _save_config_to_file(self, config: Dict[str, Any]):
+        """Save configuration to JSON file."""
+        try:
+            with open(self.config_file, 'w') as f:
+                json.dump(config, f, indent=2)
+        except Exception as e:
+            print(f"Error saving config file: {e}")
 
     def _param_exists(self, param_name: str) -> bool:
-        """Check if a parameter exists in the Params system."""
-        param_key = self.PARAM_KEYS[param_name]
-        value = self.params.get(param_key, encoding='utf-8')
-        return value is not None and value != ""
+        """Check if a parameter exists in the config file."""
+        config = self._load_config_from_file()
+        return config is not None and param_name in config
 
     def _set_param(self, param_name: str, value: Any):
-        """Set a parameter in the Params system with proper type conversion."""
-        param_key = self.PARAM_KEYS[param_name]
-
-        if isinstance(value, bool):
-            self.params.put_bool(param_key, value)
-        elif isinstance(value, int):
-            self.params.put(param_key, str(value))
-        elif isinstance(value, float):
-            self.params.put(param_key, str(value))
-        else:
-            self.params.put(param_key, str(value))
+        """Set a parameter in the config file."""
+        config = self._load_config_from_file() or {}
+        config[param_name] = value
+        self._save_config_to_file(config)
 
     def _get_param(self, param_name: str) -> Any:
-        """Get a parameter from the Params system with proper type conversion."""
-        param_key = self.PARAM_KEYS[param_name]
-
-        if param_name == 'use_plan':
-            return self.params.get_bool(param_key)
-        elif param_name in ['frequency', 'smoothing_window']:
-            value = self.params.get(param_key, encoding='utf-8')
-            return int(value) if value else self.DEFAULT_CONFIG[param_name]
-        else:  # float parameters
-            value = self.params.get(param_key, encoding='utf-8')
-            return float(value) if value else self.DEFAULT_CONFIG[param_name]
+        """Get a parameter from the config file."""
+        config = self._load_config_from_file()
+        if config and param_name in config:
+            return config[param_name]
+        return self.DEFAULT_CONFIG[param_name]
 
     def validate_config(self, config: Dict[str, Any]) -> tuple[bool, str]:
         """
@@ -148,15 +143,15 @@ class SeatControlParameterManager:
         return True, ""
 
     def get_current_config(self) -> Dict[str, Any]:
-        """Load current configuration from Params system."""
-        config = {}
-        for param_name in self.DEFAULT_CONFIG.keys():
-            config[param_name] = self._get_param(param_name)
-        return config
+        """Load current configuration from config file."""
+        config = self._load_config_from_file()
+        if config:
+            return config
+        return self.DEFAULT_CONFIG.copy()
 
     def set_config(self, config: Dict[str, Any]) -> tuple[bool, str]:
         """
-        Save configuration to Params system with validation.
+        Save configuration to config file with validation.
 
         Returns:
             tuple: (success, error_message)
@@ -166,11 +161,9 @@ class SeatControlParameterManager:
         if not is_valid:
             return False, error_msg
 
-        # Save to Params system
+        # Save to config file
         try:
-            for param_name, value in config.items():
-                self._set_param(param_name, value)
-
+            self._save_config_to_file(config)
             print(f"Seat control configuration updated: {config}")
             return True, ""
         except Exception as e:
@@ -178,8 +171,7 @@ class SeatControlParameterManager:
 
     def reset_to_defaults(self):
         """Reset all parameters to default values."""
-        for param_name, default_value in self.DEFAULT_CONFIG.items():
-            self._set_param(param_name, default_value)
+        self._save_config_to_file(self.DEFAULT_CONFIG.copy())
         print("Seat control parameters reset to defaults")
 
     def publish_config_response(self, config: Dict[str, Any], request_id: int = 0):
