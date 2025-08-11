@@ -159,6 +159,9 @@ class EnhancedSeatControlService:
 
         self.running = True
 
+        # Ensure components are created before starting publisher/main loop
+        self._create_components()
+
         try:
             print("Starting enhanced seat control service (file-based config)")
             print(f"Configuration: {self.current_config}")

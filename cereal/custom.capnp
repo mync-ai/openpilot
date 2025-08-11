@@ -266,6 +266,12 @@ struct SeatControl @0xa1680744031fdb2d {
 # If future expansion is needed, define new structs with new IDs.
 # (Previous definitions retained in git history.)
 
+struct CustomReserved10 @0xcb9fd56c7057593a {
+}
+
+struct CustomReserved11 @0xc2243c65e0340384 {
+}
+
 struct CustomReserved12 @0x9ccdc8676701b412 {
 }
 
