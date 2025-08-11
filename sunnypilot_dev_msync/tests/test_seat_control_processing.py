@@ -2,9 +2,6 @@
 """
 Test script to verify get_short_control() processes capnp enum values correctly
 """
-
-import sys
-import time
 try:
     from unittest.mock import patch
 except ImportError:
@@ -68,9 +65,9 @@ def test_seat_control_command_mapping():
             result = get_short_control()
 
             if result == expected_result:
-                print(f"  ✓ Command {cmd_val}: '{result}' (PASS)")
+                print(f"  ✓ Command {cmd_val}: '{result}' matches expected '{expected_result}'")
             else:
-                print(f"  ✗ Command {cmd_val}: Got '{result}', Expected '{expected_result}' (FAIL)")
+                print(f"  ✗ Command {cmd_val}: '{result}' (expected '{expected_result}')")
 
         print("\nTesting edge cases:")
 
@@ -112,11 +109,10 @@ def test_turn_detection_logic():
             print(f"  Command {right_cmd}: '{result}' -> {'RIGHT TURN DETECTED' if result == 'right' else 'UNEXPECTED'}")
 
         print("\nTesting non-turn commands:")
-        for non_turn_cmd in [0, 1, 2]:  # neutral, forward, back
+        for non_turn_cmd in [0, 1, 2]:
             mock_sm.__getitem__.return_value.command = non_turn_cmd
             result = get_short_control()
-            turn_type = "TURN" if result in ['left', 'right'] else "NON-TURN"
-            print(f"  Command {non_turn_cmd}: '{result}' -> {turn_type}")
+            print(f"  Command {non_turn_cmd}: '{result}' -> {'NO TURN' if result not in ['left', 'right'] else 'UNEXPECTED'}")
 
 def test_enum_type_consistency():
     """Test that capnp enums behave as expected"""
@@ -176,12 +172,7 @@ def test_telemetry_integration():
         for cmd_val, description in test_sequence:
             mock_sm.__getitem__.return_value.command = cmd_val
             result = get_short_control()
-
-            # Determine if this is a turn for telemetry
-            is_turn = result in ['left', 'right']
-            turn_indicator = " 🔄" if is_turn else ""
-
-            print(f"  {description}: Command {cmd_val} -> '{result}'{turn_indicator}")
+            print(f"  {description}: Command {cmd_val} -> '{result}'")
 
 if __name__ == "__main__":
     print("Testing get_short_control() function processing\n")
