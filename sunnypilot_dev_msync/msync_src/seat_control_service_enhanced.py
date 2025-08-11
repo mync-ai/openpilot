@@ -1,10 +1,8 @@
 #!/usr/bin/env python3
-"""
-Enhanced Seat Control Service with Runtime Configuration
+"""Enhanced Seat Control Service (file-based config only)
 
-This service runs as a background process to publish seat control commands
-to the messaging system for UI display. It supports runtime configuration
-changes via the messaging system.
+Messaging-based configuration request/response paths removed. Configuration
+changes are applied by editing the JSON file watched by this process.
 """
 
 import argparse
@@ -12,7 +10,6 @@ import sys
 import os
 import signal
 import time
-import threading
 import cereal.messaging as messaging
 
 from sunnypilot_dev_msync.msync_src import short_control
@@ -29,29 +26,7 @@ class EnhancedSeatControlService:
         self.publisher = None
         self.parameter_manager = SeatControlParameterManager()
 
-        # Initialize messaging attributes to None
-        self.config_pm = None
-        self.config_sm = None
-
-        print("DEBUG: Initializing messaging...")
-
-        # Configuration publishing (responses) - Should work based on test
-        try:
-            self.config_pm = messaging.PubMaster(['seatControlConfig'])
-            print("DEBUG: Created PubMaster for seatControlConfig")
-        except Exception as e:
-            print(f"DEBUG: Error creating PubMaster for seatControlConfig: {e}")
-            self.config_pm = None
-
-        # Configuration subscribing (requests) - Should work based on test
-        try:
-            self.config_sm = messaging.SubMaster(['seatControlConfigRequest'])
-            print("DEBUG: Created SubMaster for seatControlConfigRequest")
-        except Exception as e:
-            print(f"DEBUG: Error creating SubMaster for seatControlConfigRequest: {e}")
-            self.config_sm = None
-
-        # Main messaging for seat control
+        # Only subscribe to data topics needed for decisions
         self.topics = ['carState', 'carControl', 'modelV2', 'longitudinalPlan', 'radarState']
         self.sm = messaging.SubMaster(self.topics)
 
@@ -64,15 +39,14 @@ class EnhancedSeatControlService:
         else:
             self.current_config = self.parameter_manager.get_current_config()
 
-        print(f"Seat control configuration updated: {self.current_config}")
         print(f"Initialized with config: {self.current_config}")
 
-        # Create components - this might be where the real issue is
-        try:
-            self._create_components()
-            print("DEBUG: Components created successfully")
-        except Exception as e:
-            print(f"DEBUG: Error creating components: {e}")
+        # Track config file for external (CLI) edits (no re-import needed)
+        self._config_file_path = getattr(self.parameter_manager, 'config_file', '/tmp/seat_control_config.json')
+        if os.path.exists(self._config_file_path):
+            self._last_config_mtime = os.path.getmtime(self._config_file_path)
+        else:
+            self._last_config_mtime = 0
 
         # Setup signal handlers
         signal.signal(signal.SIGINT, self._signal_handler)
@@ -138,121 +112,44 @@ class EnhancedSeatControlService:
             print(f"Error during component restart: {e}")
             raise
 
-    def _handle_config_request(self):
-        """Handle configuration requests from UI."""
-        try:
-            # Check if we can receive config requests
-            if not self.config_sm:
-                return
-
-            if not self.config_sm.updated['seatControlConfigRequest']:
-                return
-
-            request = self.config_sm['seatControlConfigRequest']
-
-            # Try to access the request data
-            try:
-                request_data = request
-                action_enum = request_data.action
-
-                # Convert enum to string
-                action_str = str(action_enum)
-                if action_str == 'get':
-                    action_value = 0
-                elif action_str == 'set':
-                    action_value = 1
-                elif action_str == 'reset':
-                    action_value = 2
-                else:
-                    action_value = 0  # default to get
-
-                action_names = ['get', 'set', 'reset']
-                action = action_names[action_value] if action_value < len(action_names) else 'unknown'
-
-                print(f"Received config request: action={action}")
-
-                if action == 'get':
-                    # Instead of publishing, write current config to a known location
-                    # that the UI can read from
-                    self._save_config_for_ui(self.current_config, request_data.requestId)
-
-                elif action == 'set':
-                    # Apply new configuration
-                    new_config = {
-                        'frequency': request_data.config.frequency,
-                        'turn_thresh_1': request_data.config.turnThresh1,
-                        'turn_thresh_2': request_data.config.turnThresh2,
-                        'long_thresh': request_data.config.longThresh,
-                        'smoothing_window': request_data.config.smoothingWindow,
-                        'horizon': request_data.config.horizon,
-                        'use_plan': request_data.config.usePlan
-                    }
-
-                    # Validate and save configuration
-                    success, error = self.parameter_manager.set_config(new_config)
-
-                    if success:
-                        old_config = self.current_config.copy()
-                        self.current_config = new_config
-
-                        try:
-                            self._restart_components()
-                            self._save_config_for_ui(self.current_config, request_data.requestId)
-                            print(f"Configuration updated successfully: {self.current_config}")
-                        except Exception as restart_error:
-                            print(f"Failed to restart components: {restart_error}")
-                            # Revert to old configuration
-                            self.current_config = old_config
-                            print("Reverted to previous configuration")
-                            self._save_config_for_ui(self.current_config, request_data.requestId,
-                                                   f"Configuration update failed: {str(restart_error)}")
-                    else:
-                        print(f"Configuration validation failed: {error}")
-                        self._save_config_for_ui(self.current_config, request_data.requestId, error)
-
-                elif action == 'reset':
-                    # Reset to defaults
-                    self.parameter_manager.reset_to_defaults()
-                    self.current_config = self.parameter_manager.get_current_config()
-                    self._restart_components()
-                    self._save_config_for_ui(self.current_config, request_data.requestId)
-                    print("Configuration reset to defaults")
-
-            except Exception as e:
-                print(f"Error processing config request: {e}")
-
-        except Exception as e:
-            print(f"Error handling config request: {e}")
-            import traceback
-            traceback.print_exc()
-
-    def _save_config_for_ui(self, config, request_id, error_msg=None):
-        """Save configuration response to a file that the UI can read."""
+    def _reload_config_from_file(self):
+        """Reload configuration directly from JSON file and restart components if changed."""
         try:
             import json
-
-            response_data = {
-                'requestId': request_id,
-                'timestamp': int(time.time() * 1e9),
-                'config': config,
-                'error': error_msg,
-                'success': error_msg is None
-            }
-
-            # Save to a temporary file that the UI can poll
-            response_file = '/tmp/seat_control_config_response.json'
-            with open(response_file, 'w') as f:
-                json.dump(response_data, f, indent=2)
-
-            print(f"Saved config response to {response_file}")
-
-            if error_msg:
-                print(f"Config response with error: {error_msg}")
-            else:
-                print(f"Config response saved: {config}")
-
+            if not os.path.exists(self._config_file_path):
+                return
+            with open(self._config_file_path) as f:  # mode argument optional
+                new_config = json.load(f)
         except Exception as e:
-            print(f"Error saving config response: {e}")
+            print(f"Config reload failed: {e}")
+            return
+        # Validate using parameter manager to ensure consistency
+        valid, err = self.parameter_manager.validate_config(new_config)
+        if not valid:
+            print(f"Ignored invalid external config edit: {err}")
+            return
+        if new_config != self.current_config:
+            print(f"Detected external config change: {new_config}")
+            old_config = self.current_config.copy()
+            self.current_config = new_config
+            try:
+                self._restart_components()
+            except Exception as e:
+                print(f"Failed to apply external config change, reverting: {e}")
+                self.current_config = old_config
+
+    def _poll_config_file(self):
+        """Check JSON file mtime for external changes (CLI edits)."""
+        try:
+            if not self._config_file_path:
+                return
+            if os.path.exists(self._config_file_path):
+                mtime = os.path.getmtime(self._config_file_path)
+                if mtime > self._last_config_mtime:
+                    self._last_config_mtime = mtime
+                    self._reload_config_from_file()
+        except Exception as e:
+            print(f"Config file poll error: {e}")
 
     def start(self):
         """Start the seat control service."""
@@ -263,20 +160,9 @@ class EnhancedSeatControlService:
         self.running = True
 
         try:
-            print("Starting enhanced seat control service")
+            print("Starting enhanced seat control service (file-based config)")
             print(f"Configuration: {self.current_config}")
             print(f"Subscribed topics: {', '.join(self.topics)}")
-
-            # Check messaging status
-            if self.config_pm:
-                print("DEBUG: Configuration publisher available - can respond to UI requests")
-            else:
-                print("DEBUG: Configuration publisher unavailable - running in read-only mode")
-
-            if self.config_sm:
-                print("DEBUG: Configuration subscriber available - can receive UI requests")
-            else:
-                print("DEBUG: Cannot receive configuration requests")
 
             # Start publisher
             if self.publisher:
@@ -285,18 +171,8 @@ class EnhancedSeatControlService:
 
             # Main service loop
             while self.running:
-                # Handle configuration requests (only if we have a subscriber)
-                if self.config_sm:
-                    self.config_sm.update()
-
-                    # Debug: Check if we have any messages
-                    if 'seatControlConfigRequest' in self.config_sm.updated:
-                        if self.config_sm.updated['seatControlConfigRequest']:
-                            print("DEBUG: Received config request message")
-
-                    self._handle_config_request()
-
-                # Small sleep to prevent excessive CPU usage
+                # File-based config polling (preferred over messaging now)
+                self._poll_config_file()
                 time.sleep(0.1)
 
         except KeyboardInterrupt:
@@ -328,7 +204,7 @@ def run_service_enhanced(**kwargs):
 
 
 def main():
-    parser = argparse.ArgumentParser(description='Enhanced Seat Control Service with Runtime Configuration')
+    parser = argparse.ArgumentParser(description='Enhanced Seat Control Service (file-based config)')
     parser.add_argument('--frequency', type=int, default=20, help='Update frequency in Hz')
     parser.add_argument('--turn-thresh-1', type=float, default=1.0, help='First turn threshold')
     parser.add_argument('--turn-thresh-2', type=float, default=2.5, help='Second turn threshold')

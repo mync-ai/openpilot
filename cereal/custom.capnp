@@ -259,28 +259,12 @@ struct SeatControl @0xa1680744031fdb2d {
   }
 }
 
-struct SeatControlConfig @0xcb9fd56c7057593a {
-  frequency @0 :UInt32;
-  turnThresh1 @1 :Float32;
-  turnThresh2 @2 :Float32;
-  longThresh @3 :Float32;
-  smoothingWindow @4 :UInt32;
-  horizon @5 :Float32;
-  usePlan @6 :Bool;
-  timestamp @7 :UInt64;
-}
-
-struct SeatControlConfigRequest @0xc2243c65e0340384 {
-  action @0 :ConfigAction;
-  config @1 :SeatControlConfig;
-  requestId @2 :UInt64;
-
-  enum ConfigAction {
-    get @0;
-    set @1;
-    reset @2;
-  }
-}
+# DEPRECATED / REMOVED: SeatControlConfig and SeatControlConfigRequest were used for
+# messaging-based hyperparameter management. Configuration now uses a JSON file
+# and hot reload; these structs are intentionally removed to slim the schema.
+# Historical IDs (@0xcb9fd56c7057593a and @0xc2243c65e0340384) are not reused.
+# If future expansion is needed, define new structs with new IDs.
+# (Previous definitions retained in git history.)
 
 struct CustomReserved12 @0x9ccdc8676701b412 {
 }

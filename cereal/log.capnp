@@ -2614,8 +2614,6 @@ struct Event {
     carStateSP @114 :Custom.CarStateSP;
     liveMapDataSP @115 :Custom.LiveMapDataSP;
     seatControl @116 :Custom.SeatControl;
-    seatControlConfig @136 :Custom.SeatControlConfig;
-    seatControlConfigRequest @137 :Custom.SeatControlConfigRequest;
     customReserved12 @138 :Custom.CustomReserved12;
     customReserved13 @139 :Custom.CustomReserved13;
     customReserved14 @140 :Custom.CustomReserved14;

@@ -49,7 +49,6 @@ public slots:
     void saveConfig();
     void resetToDefaults();
     void onConfigReceived(const SeatControlConfig &config);
-    void loadConfigFromFile();
 
 signals:
     void configChanged(const SeatControlConfig &config);
@@ -65,9 +64,6 @@ private:
     bool isValidConfig() const;
     void showStatus(const QString &message, bool success = true);
     void setControlsEnabled(bool enabled);
-
-    // Touch event handling for comma device
-    bool event(QEvent *event) override;
 
     // UI Components
     QVBoxLayout *main_layout;

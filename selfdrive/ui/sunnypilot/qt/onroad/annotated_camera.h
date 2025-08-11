@@ -9,7 +9,6 @@
 
 #include <QResizeEvent>
 #include "selfdrive/ui/qt/onroad/annotated_camera.h"
-#include "selfdrive/ui/sunnypilot/qt/onroad/seat_control_button.h"
 
 class AnnotatedCameraWidgetSP : public AnnotatedCameraWidget {
   Q_OBJECT
@@ -20,7 +19,4 @@ public:
 
 protected:
   void resizeEvent(QResizeEvent *event) override;
-
-private:
-  SeatControlConfigButton *seat_control_btn;
 };

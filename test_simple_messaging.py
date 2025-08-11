@@ -7,7 +7,7 @@ from cereal import messaging
 def test_messaging_availability():
     """Test which seat control topics are available for publishing."""
 
-    topics_to_test = ['seatControl', 'seatControlConfig', 'seatControlConfigRequest']
+    topics_to_test = ['seatControl']
 
     for topic in topics_to_test:
         try:

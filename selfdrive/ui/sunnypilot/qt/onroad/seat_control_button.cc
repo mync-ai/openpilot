@@ -9,8 +9,6 @@
 #include <QGroupBox>
 #include <QTimer>
 #include <QThread>
-#include <QTouchEvent>
-#include <QMouseEvent>
 #include <QtWidgets/QLineEdit>
 #include <QtWidgets/QAbstractButton>
 #include <random>
@@ -26,33 +24,37 @@ SeatControlConfigDialog::SeatControlConfigDialog(QWidget *parent)
     : QDialog(parent), waiting_for_response(false), config_valid(true) {
     setWindowTitle("Seat Control Configuration");
 
-    // Set window flags for comma device compatibility
-    setWindowFlags(Qt::Dialog | Qt::WindowStaysOnTopHint | Qt::FramelessWindowHint);
-    setAttribute(Qt::WA_AcceptTouchEvents, true);
-    setAttribute(Qt::WA_DeleteOnClose, false);
-
-    // Make dialog appropriately sized for comma device
-    // Comma device is 1920x1080 in landscape, but displayed as 1080x1920 portrait
-    setFixedSize(800, 600); // Conservative size that works in both orientations
+    // Make dialog larger and position at bottom of screen
+    setFixedSize(1400, 1000); // Increased height to accommodate taller layout with proper spacing
     setModal(true);
 
-    // Position dialog for comma device
-    QTimer::singleShot(0, this, [this]() {
-        QRect screenGeometry = QApplication::primaryScreen()->availableGeometry();
+    // Position dialog at bottom center of screen with better handling
+    QTimer::singleShot(0, this, [this, parent]() {
+        QRect screenGeometry;
+        if (parent && parent->window()) {
+            // Try to get the screen containing the parent window using QApplication
+            QWidget* topLevel = parent->window();
+            QScreen* screen = QApplication::screenAt(topLevel->geometry().center());
+            if (screen) {
+                screenGeometry = screen->availableGeometry();
+            } else {
+                // Fallback to primary screen
+                screenGeometry = QApplication::primaryScreen()->availableGeometry();
+            }
+        } else {
+            // Fallback to primary screen
+            screenGeometry = QApplication::primaryScreen()->availableGeometry();
+        }
 
-        // Center the dialog
-        int x = (screenGeometry.width() - width()) / 2;
-        int y = (screenGeometry.height() - height()) / 2;
+        // Center horizontally, position at bottom with some margin
+        int x = screenGeometry.x() + (screenGeometry.width() - width()) / 2;
+        int y = screenGeometry.y() + screenGeometry.height() - height() - 100; // 100px from bottom
 
         // Ensure dialog stays within screen bounds
-        x = qMax(0, qMin(x, screenGeometry.width() - width()));
-        y = qMax(0, qMin(y, screenGeometry.height() - height()));
+        x = qMax(screenGeometry.x(), qMin(x, screenGeometry.x() + screenGeometry.width() - width()));
+        y = qMax(screenGeometry.y(), qMin(y, screenGeometry.y() + screenGeometry.height() - height()));
 
         move(x, y);
-
-        // Raise the dialog to make sure it's on top
-        raise();
-        activateWindow();
     });
 
     // Generate unique request ID
@@ -61,10 +63,10 @@ SeatControlConfigDialog::SeatControlConfigDialog(QWidget *parent)
     current_request_id = gen();
 
     setupUI();
-    // Remove setupMessaging() call to avoid timeouts
+    setupMessaging();
 
-    // Load configuration from file instead of messaging
-    QTimer::singleShot(100, this, &SeatControlConfigDialog::loadConfigFromFile);
+    // Load current configuration on startup
+    QTimer::singleShot(100, this, &SeatControlConfigDialog::requestCurrentConfig);
 }
 
 void SeatControlConfigDialog::setupUI() {
@@ -97,16 +99,16 @@ void SeatControlConfigDialog::setupUI() {
 
     QGridLayout *params_layout = new QGridLayout(params_group);
     params_layout->setContentsMargins(30, 40, 30, 30); // Larger margins
-    params_layout->setVerticalSpacing(50); // Even larger vertical spacing for 60px tall controls
-    params_layout->setHorizontalSpacing(50); // Even larger horizontal spacing for wider controls
+    params_layout->setVerticalSpacing(45); // Much larger vertical spacing to prevent overlap of 50px tall spinboxes
+    params_layout->setHorizontalSpacing(40); // Much larger horizontal spacing to accommodate wide spinbox buttons
 
     // Set column stretch factors to give more space to the spinbox column
     params_layout->setColumnStretch(0, 2); // Label column gets 2 parts
-    params_layout->setColumnStretch(1, 3); // Spinbox column gets 3 parts (more space for wider controls)
+    params_layout->setColumnStretch(1, 3); // Spinbox column gets 3 parts (more space for wide buttons)
 
-    // Set minimum row heights to prevent overlap with larger controls
+    // Set minimum row heights to prevent overlap
     for (int row = 0; row < 7; row++) {
-        params_layout->setRowMinimumHeight(row, 80); // Each row needs at least 80px for 60px controls + spacing
+        params_layout->setRowMinimumHeight(row, 70); // Each row needs at least 70px for 50px spinboxes + spacing
     }
 
     // Create input fields with labels and descriptions
@@ -143,9 +145,9 @@ void SeatControlConfigDialog::setupUI() {
     frequency_spin = new QSpinBox();
     frequency_spin->setRange(1, 100);
     frequency_spin->setValue(20);
-    frequency_spin->setStyleSheet("font-size: 24px; padding: 15px; min-height: 60px;"); // Much larger for touch
-    frequency_spin->setMinimumHeight(60); // Touch-friendly height
-    frequency_spin->setMinimumWidth(250); // Wider for better touch interaction
+    frequency_spin->setStyleSheet("font-size: 18px; padding: 12px; min-height: 50px;"); // Larger font and height
+    frequency_spin->setMinimumHeight(50); // Touch-friendly height
+    frequency_spin->setMinimumWidth(200); // Ensure enough width for wide buttons
     params_layout->addWidget(frequency_spin, 0, 1);
 
     // Turn Threshold 1
@@ -155,9 +157,9 @@ void SeatControlConfigDialog::setupUI() {
     turn_thresh_1_spin->setDecimals(2);
     turn_thresh_1_spin->setSingleStep(0.1);
     turn_thresh_1_spin->setValue(1.0);
-    turn_thresh_1_spin->setStyleSheet("font-size: 24px; padding: 15px; min-height: 60px;"); // Larger for touch
-    turn_thresh_1_spin->setMinimumHeight(60); // Touch-friendly height
-    turn_thresh_1_spin->setMinimumWidth(250); // Touch-friendly width
+    turn_thresh_1_spin->setStyleSheet("font-size: 18px; padding: 12px; min-height: 50px;"); // Larger font and height
+    turn_thresh_1_spin->setMinimumHeight(50); // Touch-friendly height
+    turn_thresh_1_spin->setMinimumWidth(200); // Ensure enough width for wide buttons
     params_layout->addWidget(turn_thresh_1_spin, 1, 1);
 
     // Turn Threshold 2
@@ -167,9 +169,9 @@ void SeatControlConfigDialog::setupUI() {
     turn_thresh_2_spin->setDecimals(2);
     turn_thresh_2_spin->setSingleStep(0.1);
     turn_thresh_2_spin->setValue(2.5);
-    turn_thresh_2_spin->setStyleSheet("font-size: 24px; padding: 15px; min-height: 60px;"); // Larger for touch
-    turn_thresh_2_spin->setMinimumHeight(60); // Touch-friendly height
-    turn_thresh_2_spin->setMinimumWidth(250); // Touch-friendly width
+    turn_thresh_2_spin->setStyleSheet("font-size: 18px; padding: 12px; min-height: 50px;"); // Larger font and height
+    turn_thresh_2_spin->setMinimumHeight(50); // Touch-friendly height
+    turn_thresh_2_spin->setMinimumWidth(200); // Ensure enough width for wide buttons
     params_layout->addWidget(turn_thresh_2_spin, 2, 1);
 
     // Longitudinal Threshold
@@ -179,9 +181,9 @@ void SeatControlConfigDialog::setupUI() {
     long_thresh_spin->setDecimals(2);
     long_thresh_spin->setSingleStep(0.1);
     long_thresh_spin->setValue(1.0);
-    long_thresh_spin->setStyleSheet("font-size: 24px; padding: 15px; min-height: 60px;"); // Larger for touch
-    long_thresh_spin->setMinimumHeight(60); // Touch-friendly height
-    long_thresh_spin->setMinimumWidth(250); // Touch-friendly width
+    long_thresh_spin->setStyleSheet("font-size: 18px; padding: 12px; min-height: 50px;"); // Larger font and height
+    long_thresh_spin->setMinimumHeight(50); // Touch-friendly height
+    long_thresh_spin->setMinimumWidth(200); // Ensure enough width for wide buttons
     params_layout->addWidget(long_thresh_spin, 3, 1);
 
     // Smoothing Window
@@ -189,9 +191,9 @@ void SeatControlConfigDialog::setupUI() {
     smoothing_window_spin = new QSpinBox();
     smoothing_window_spin->setRange(1, 20);
     smoothing_window_spin->setValue(4);
-    smoothing_window_spin->setStyleSheet("font-size: 24px; padding: 15px; min-height: 60px;"); // Larger for touch
-    smoothing_window_spin->setMinimumHeight(60); // Touch-friendly height
-    smoothing_window_spin->setMinimumWidth(250); // Touch-friendly width
+    smoothing_window_spin->setStyleSheet("font-size: 18px; padding: 12px; min-height: 50px;"); // Larger font and height
+    smoothing_window_spin->setMinimumHeight(50); // Touch-friendly height
+    smoothing_window_spin->setMinimumWidth(200); // Ensure enough width for wide buttons
     params_layout->addWidget(smoothing_window_spin, 4, 1);
 
     // Horizon
@@ -201,9 +203,9 @@ void SeatControlConfigDialog::setupUI() {
     horizon_spin->setDecimals(1);
     horizon_spin->setSingleStep(0.1);
     horizon_spin->setValue(3.0);
-    horizon_spin->setStyleSheet("font-size: 24px; padding: 15px; min-height: 60px;"); // Larger for touch
-    horizon_spin->setMinimumHeight(60); // Touch-friendly height
-    horizon_spin->setMinimumWidth(250); // Touch-friendly width
+    horizon_spin->setStyleSheet("font-size: 18px; padding: 12px; min-height: 50px;"); // Larger font and height
+    horizon_spin->setMinimumHeight(50); // Touch-friendly height
+    horizon_spin->setMinimumWidth(200); // Ensure enough width for wide buttons
     params_layout->addWidget(horizon_spin, 5, 1);
 
     // Set button text for spinboxes to show + and - symbols
@@ -246,8 +248,8 @@ void SeatControlConfigDialog::setupUI() {
     // Use Plan
     params_layout->addWidget(create_label("Use Plan Data", "Use plan instead of prediction data"), 6, 0);
     use_plan_check = new QCheckBox();
-    use_plan_check->setStyleSheet("font-size: 24px; min-height: 60px;"); // Larger for touch
-    use_plan_check->setMinimumHeight(60); // Touch-friendly height
+    use_plan_check->setStyleSheet("font-size: 18px; min-height: 50px;"); // Larger font and height
+    use_plan_check->setMinimumHeight(50); // Touch-friendly height
     params_layout->addWidget(use_plan_check, 6, 1);
 
     main_layout->addWidget(params_group);
@@ -264,8 +266,8 @@ void SeatControlConfigDialog::setupUI() {
 
     load_button = new QPushButton("Load Current");
     load_button->setStyleSheet(
-        "QPushButton { background-color: #4a90e2; color: white; font-size: 20px; " // Larger font for touch
-        "padding: 15px 25px; border-radius: 8px; font-weight: bold; min-height: 60px; }" // Larger for touch
+        "QPushButton { background-color: #4a90e2; color: white; font-size: 16px; " // Back to original font size
+        "padding: 10px 20px; border-radius: 8px; font-weight: bold; }" // Back to original padding
         "QPushButton:hover { background-color: #357abd; }"
         "QPushButton:pressed { background-color: #2968a3; }"
     );
@@ -274,8 +276,8 @@ void SeatControlConfigDialog::setupUI() {
 
     reset_button = new QPushButton("Reset to Defaults");
     reset_button->setStyleSheet(
-        "QPushButton { background-color: #f39c12; color: white; font-size: 20px; " // Larger font for touch
-        "padding: 15px 25px; border-radius: 8px; font-weight: bold; min-height: 60px; }" // Larger for touch
+        "QPushButton { background-color: #f39c12; color: white; font-size: 16px; " // Back to original font size
+        "padding: 10px 20px; border-radius: 8px; font-weight: bold; }" // Back to original padding
         "QPushButton:hover { background-color: #d68910; }"
         "QPushButton:pressed { background-color: #b7750f; }"
     );
@@ -304,15 +306,15 @@ void SeatControlConfigDialog::setupUI() {
     button_box = new QDialogButtonBox(QDialogButtonBox::Save | QDialogButtonBox::Cancel);
     button_box->button(QDialogButtonBox::Save)->setText("Save & Apply");
     button_box->button(QDialogButtonBox::Save)->setStyleSheet(
-        "QPushButton { background-color: #27ae60; color: white; font-size: 20px; " // Larger font for touch
-        "padding: 15px 30px; border-radius: 8px; font-weight: bold; min-height: 60px; }" // Larger for touch
+        "QPushButton { background-color: #27ae60; color: white; font-size: 16px; " // Back to original font size
+        "padding: 12px 25px; border-radius: 8px; font-weight: bold; }" // Back to original padding
         "QPushButton:hover { background-color: #229954; }"
         "QPushButton:pressed { background-color: #1e8449; }"
         "QPushButton:disabled { background-color: #7f8c8d; }"
     );
     button_box->button(QDialogButtonBox::Cancel)->setStyleSheet(
-        "QPushButton { background-color: #95a5a6; color: white; font-size: 20px; " // Larger font for touch
-        "padding: 15px 30px; border-radius: 8px; font-weight: bold; min-height: 60px; }" // Larger for touch
+        "QPushButton { background-color: #95a5a6; color: white; font-size: 16px; " // Back to original font size
+        "padding: 12px 25px; border-radius: 8px; font-weight: bold; }" // Back to original padding
         "QPushButton:hover { background-color: #7f8c8d; }"
         "QPushButton:pressed { background-color: #6c7b7d; }"
     );
@@ -481,56 +483,6 @@ void SeatControlConfigDialog::onConfigReceived(const SeatControlConfig &config) 
 
 void SeatControlConfigDialog::onValidationTimer() {
     validateInputs();
-}
-
-void SeatControlConfigDialog::loadConfigFromFile() {
-    // Load configuration using default values instead of messaging
-    SeatControlConfig config;
-    config.frequency = 20;
-    config.turn_thresh_1 = 1.0;
-    config.turn_thresh_2 = 2.5;
-    config.long_thresh = 1.0;
-    config.smoothing_window = 4;
-    config.horizon = 3.0;
-    config.use_plan = false;
-
-    current_config = config;
-    setConfig(config);
-    showStatus("Default configuration loaded");
-    emit configChanged(config);
-}
-
-bool SeatControlConfigDialog::event(QEvent *event) {
-    // Handle touch events for comma device
-    if (event->type() == QEvent::TouchBegin ||
-        event->type() == QEvent::TouchUpdate ||
-        event->type() == QEvent::TouchEnd) {
-        QTouchEvent *touchEvent = static_cast<QTouchEvent*>(event);
-
-        // Convert touch to mouse events for better compatibility
-        if (touchEvent->touchPoints().size() == 1) {
-            const QTouchEvent::TouchPoint &touchPoint = touchEvent->touchPoints().first();
-            QPoint pos = touchPoint.pos().toPoint();
-
-            QMouseEvent *mouseEvent = nullptr;
-
-            if (event->type() == QEvent::TouchBegin) {
-                mouseEvent = new QMouseEvent(QEvent::MouseButtonPress, pos,
-                                           Qt::LeftButton, Qt::LeftButton, Qt::NoModifier);
-            } else if (event->type() == QEvent::TouchEnd) {
-                mouseEvent = new QMouseEvent(QEvent::MouseButtonRelease, pos,
-                                           Qt::LeftButton, Qt::LeftButton, Qt::NoModifier);
-            }
-
-            if (mouseEvent) {
-                QApplication::postEvent(this, mouseEvent);
-                event->accept();
-                return true;
-            }
-        }
-    }
-
-    return QDialog::event(event);
 }
 
 void SeatControlConfigDialog::validateInputs() {
