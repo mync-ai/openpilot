@@ -73,7 +73,7 @@ def main():
           msg = cmd
         else:
           msg = " Invalid data"
-        msg = str(curr_time()) + " " + msg + " "
+        msg = str(curr_time()) + " " + msg + "\n"
 
         # msg = str(curr_time())+" test_"+str(tel_idx)
 
