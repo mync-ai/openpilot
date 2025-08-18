@@ -10,14 +10,13 @@ def get_gps():
     if sm.updated['gpsLocationExternal']:
         gps = sm['gpsLocationExternal']
         gps_out = {
+            'timestamp': gps.unixTimestampMillis,
             'latitude': gps.latitude,
             'longitude': gps.longitude,
             'vertical_accuracy': gps.verticalAccuracy,
             'horizontal_accuracy': gps.horizontalAccuracy,
-            'speed': gps.speed,
-            'timestamp': gps.unixTimestampMillis
+            'speed': gps.speed
         }
-        gps_out['timestamp'] = gps_out['timestamp'] / 1000.0   #convert from ms to s
         return gps_out
 
 def get_short_control():

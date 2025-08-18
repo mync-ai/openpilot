@@ -34,6 +34,6 @@ protected:
   int status = STATUS_DISENGAGED;
 
   // Seat control display
-  QString seat_control_command = "NEUTRAL";
-  QString seat_control_source = "None";
+  QString seat_control_lateral_command = "NEUTRAL";
+  QString seat_control_longitudinal_command = "NEUTRAL";
 };

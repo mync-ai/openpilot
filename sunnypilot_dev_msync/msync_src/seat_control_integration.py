@@ -34,15 +34,6 @@ class SeatControlPublisher:
             'HARD_RIGHT': 'hardRight'
         }
 
-        # Source mapping from string to enum
-        self.source_map = {
-            'None': 'none',
-            'STOP': 'stop',
-            'ACCELERATE': 'accelerate',
-            'CURVE': 'curve',
-            'TURN': 'turn'
-        }
-
     def start(self):
         """Start the seat control publisher thread."""
         if self.running:
@@ -73,16 +64,16 @@ class SeatControlPublisher:
                 # Create and publish seat control message
                 seat_control_msg = messaging.new_message('seatControl')
 
-                # Map command string to enum
-                command_str = control_response[0]
-                command_enum = self.command_map.get(command_str, 'neutral')
+                # Handle tuple return: (lateral_command_str, longitudinal_command_str)
+                lateral_command_str = control_response[0]
+                longitudinal_command_str = control_response[1]
 
-                # Map source string to enum
-                source_str = control_response[1]
-                source_enum = self.source_map.get(source_str, 'none')
+                # Map command strings to enums
+                lateral_command_enum = self.command_map.get(lateral_command_str, 'neutral')
+                longitudinal_command_enum = self.command_map.get(longitudinal_command_str, 'neutral')
 
-                seat_control_msg.seatControl.command = command_enum
-                seat_control_msg.seatControl.source = source_enum
+                seat_control_msg.seatControl.lateralCommand = lateral_command_enum
+                seat_control_msg.seatControl.longitudinalCommand = longitudinal_command_enum
                 seat_control_msg.seatControl.timestamp = int(time.time() * 1e9)  # nanoseconds
 
                 self.pm.send('seatControl', seat_control_msg)

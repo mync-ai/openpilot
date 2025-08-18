@@ -236,8 +236,8 @@ struct LiveMapDataSP @0xf416ec09499d9d19 {
 }
 
 struct SeatControl @0xa1680744031fdb2d {
-  command @0 :SeatControlCommand;
-  source @1 :SeatControlSource;
+  lateralCommand @0 :SeatControlCommand;
+  longitudinalCommand @1 :SeatControlCommand;
   timestamp @2 :UInt64;
 
   enum SeatControlCommand {
@@ -248,14 +248,6 @@ struct SeatControl @0xa1680744031fdb2d {
     mildRight @4;
     hardLeft @5;
     hardRight @6;
-  }
-
-  enum SeatControlSource {
-    none @0;
-    stop @1;
-    accelerate @2;
-    curve @3;
-    turn @4;
   }
 }
 

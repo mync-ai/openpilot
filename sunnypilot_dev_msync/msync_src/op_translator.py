@@ -109,10 +109,10 @@ if __name__ == "__main__":
     # SubMaster subscribes to selected message types
     sm = messaging.SubMaster(subscriptions)
 
-    decider = short_control.Decider(turn_thresh_1=1.0, turn_thresh_2=2.5, long_thresh=1.0, smoothing_window=4, use_plan=False)
+    decider = short_control.Decider(turn_thresh_1=1.0, turn_thresh_2=2.5, accel_thresh=2.0, decel_thresh=2.0, long_smoothing=3, lat_smoothing=3, use_plan=False)
     # Set verbose=True to see detailed field-by-field output
     # Set verbose=False to use the original compact display format
     # parse_messages(interesting_subs, latency, verbose=True)
     for control_response in execute_control(decider, sm, interesting_subs, latency):
-        print(f"Response: {control_response[0]} | Source: {control_response[1]}        ", end='\r')
+        print(f"Lateral: {control_response[0]} | Longitudinal: {control_response[1]}        ", end='\r')
 

@@ -27,8 +27,8 @@ from typing import Any  # Dict deprecated, use built-in generics
 from sunnypilot_dev_msync.msync_src.parameter_manager import SeatControlParameterManager
 
 PARAM_DISPLAY_ORDER = [
-    'frequency', 'turn_thresh_1', 'turn_thresh_2', 'long_thresh',
-    'smoothing_window', 'horizon', 'use_plan'
+    'frequency', 'turn_thresh_1', 'turn_thresh_2', 'accel_thresh', 'decel_thresh',
+    'long_smoothing', 'lat_smoothing', 'horizon', 'use_plan'
 ]
 
 COLOR_OK = '\033[92m'
@@ -61,7 +61,7 @@ def parse_set_args(pairs: list[str]) -> dict[str, Any]:
       v_conv: Any = v.lower() in ('1', 'true', 'yes', 'on')
     else:
       try:
-        if k in ('frequency', 'smoothing_window'):
+        if k in ('frequency', 'long_smoothing', 'lat_smoothing'):
           v_conv = int(v)
         else:
           v_conv = float(v)
@@ -111,8 +111,10 @@ Parameters:
   frequency (int 1-100)
   turn_thresh_1 (float 0.1-10.0)
   turn_thresh_2 (float 0.1-15.0)
-  long_thresh (float 0.1-10.0)
-  smoothing_window (int 1-20)
+  accel_thresh (float 0.1-10.0)
+  decel_thresh (float 0.1-10.0)
+  long_smoothing (int 1-20)
+  lat_smoothing (int 1-20)
   horizon (float 0.5-10.0)
   use_plan (bool true/false)
 """)

@@ -65,8 +65,10 @@ class EnhancedSeatControlService:
             self.decider = short_control.Decider(
                 turn_thresh_1=self.current_config['turn_thresh_1'],
                 turn_thresh_2=self.current_config['turn_thresh_2'],
-                long_thresh=self.current_config['long_thresh'],
-                smoothing_window=self.current_config['smoothing_window'],
+                accel_thresh=self.current_config['accel_thresh'],
+                decel_thresh=self.current_config['decel_thresh'],
+                long_smoothing=self.current_config['long_smoothing'],
+                lat_smoothing=self.current_config['lat_smoothing'],
                 horizon=self.current_config['horizon'],
                 use_plan=self.current_config['use_plan']
             )
@@ -210,11 +212,13 @@ def main():
     parser = argparse.ArgumentParser(description='Enhanced Seat Control Service (file-based config)')
     parser.add_argument('--frequency', type=int, default=20, help='Update frequency in Hz')
     parser.add_argument('--turn-thresh-1', type=float, default=1.0, help='First turn threshold')
-    parser.add_argument('--turn-thresh-2', type=float, default=2.5, help='Second turn threshold')
-    parser.add_argument('--long-thresh', type=float, default=1.0, help='Longitudinal threshold')
+    parser.add_argument('--turn-thresh-2', type=float, default=2.0, help='Second turn threshold')
+    parser.add_argument('--accel-thresh', type=float, default=1.0, help='Acceleration threshold')
+    parser.add_argument('--decel-thresh', type=float, default=1.0, help='Deceleration threshold')
+    parser.add_argument('--long-smoothing', type=int, default=5, help='Longitudinal smoothing window')
+    parser.add_argument('--lat-smoothing', type=int, default=5, help='Lateral smoothing window')
     parser.add_argument('--horizon', type=float, default=3.0, help='Time horizon for predictions in seconds')
-    parser.add_argument('--smoothing-window', type=int, default=4, help='Smoothing window size')
-    parser.add_argument('--use-plan', action='store_true', default=False,
+    parser.add_argument('--use-plan', action='store_true', default=True,
                        help='Use plan data instead of prediction data for longitudinal decisions')
     parser.add_argument('--use-stored-config', action='store_true', default=False,
                        help='Use stored configuration instead of command line arguments')
@@ -230,8 +234,10 @@ def main():
             'frequency': args.frequency,
             'turn_thresh_1': args.turn_thresh_1,
             'turn_thresh_2': args.turn_thresh_2,
-            'long_thresh': args.long_thresh,
-            'smoothing_window': args.smoothing_window,
+            'accel_thresh': args.accel_thresh,
+            'decel_thresh': args.decel_thresh,
+            'long_smoothing': args.long_smoothing,
+            'lat_smoothing': args.lat_smoothing,
             'horizon': args.horizon,
             'use_plan': args.use_plan
         }
