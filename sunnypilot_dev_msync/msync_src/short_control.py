@@ -12,6 +12,7 @@ class Decider:
     HARD_LEFT = 5
     HARD_RIGHT = 6
 
+    # Constants from comma time formatting
     PLAN_TIME = [0.0, 0.156, 0.312, 0.468, 0.625, 0.781, 0.937, 1.093, 1.25, 1.406, 1.562, 1.718, 1.875, 2.031, 2.187, 2.343, 2.5]
     PRED_TIME = [0, 0.009, 0.039, 0.087, 0.156, 0.244, 0.351, 0.478, 0.625, 0.791, 0.976, 1.181, 1.406, 1.650, 1.914, 2.197, 2.5,
                  2.822, 3.164, 3.525, 3.906, 4.306, 4.726, 5.166, 5.625, 6.103, 6.601, 7.119, 7.656, 8.212, 8.789, 9.384, 10]
@@ -24,7 +25,7 @@ class Decider:
         self.accelY_pred = []
         self.velX_pred = []
         self.velY_pred = []
-        self.long_plan = []
+
         self.accel_plan = []
         self.vel_plan = []
         self.kinetime = []
