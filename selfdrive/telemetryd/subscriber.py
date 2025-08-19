@@ -21,9 +21,9 @@ def get_gps():
 
 def get_short_control():
     sm.update()
+    lat_out = "neutral"
+    long_out = "neutral"
     if sm.updated['seatControl']:
-        lat_out = "neutral"
-        long_out = "neutral"
         lat_cmd = sm['seatControl'].lateralCommand
         long_cmd = sm['seatControl'].longitudinalCommand
 
@@ -45,7 +45,7 @@ def get_short_control():
         elif long_cmd == "back":
             long_out = "back"
 
-        return lat_out, long_out
+    return lat_out, long_out
 
 # if __name__ == "__main__":
 #     latency = 0.1  # seconds, change as needed
