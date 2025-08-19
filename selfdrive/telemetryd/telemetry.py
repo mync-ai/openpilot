@@ -67,13 +67,13 @@ def main():
     tel_idx = 0
     try:
       while True:
-        cmd = get_short_control()
-        print(f"Received: {cmd}")
-        if cmd:
-          msg = cmd
+        lat_cmd, long_cmd = get_short_control()
+        print(f"Received: {lat_cmd}, {long_cmd}")
+        if lat_cmd and long_cmd:
+          msg = lat_cmd + " " + long_cmd
         else:
-          msg = " Invalid data"
-        msg = str(curr_time()) + " " + msg + "\n"
+          msg = "Invalid data"
+        msg = str(curr_time()) + " " + msg + " "
 
         # msg = str(curr_time())+" test_"+str(tel_idx)
 

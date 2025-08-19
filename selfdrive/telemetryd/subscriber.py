@@ -20,21 +20,32 @@ def get_gps():
         return gps_out
 
 def get_short_control():
-    cmd_out = "neutral"
     sm.update()
     if sm.updated['seatControl']:
-        cmd_val = sm['seatControl'].command
-        if cmd_val == "mildLeft" or cmd_val == "hardLeft":
-            cmd_out = "left"
-        elif cmd_val == "mildRight" or cmd_val == "hardRight":
-            cmd_out = "right"
-        elif cmd_val == "neutral":
-            cmd_out = "neutral"
-        elif cmd_val == "forward":
-            cmd_out = "forward"
-        elif cmd_val == "back":
-            cmd_out = "back"
-        return cmd_out
+        lat_out = "neutral"
+        long_out = "neutral"
+        lat_cmd = sm['seatControl'].lateralCommand
+        long_cmd = sm['seatControl'].longitudinalCommand
+
+        if lat_cmd == "mildLeft":
+            lat_out = "mildLeft"
+        elif lat_cmd == "hardLeft":
+            lat_out = "hardLeft"
+        elif lat_cmd == "hardRight":
+            lat_out = "hardRight"
+        elif lat_cmd == "mildRight":
+            lat_out = "mildRight"
+        elif lat_cmd == "neutral":
+            lat_out = "neutral"
+
+        if long_cmd == "neutral":
+            long_out = "neutral"
+        elif long_cmd == "forward":
+            long_out = "forward"
+        elif long_cmd == "back":
+            long_out = "back"
+
+        return lat_out, long_out
 
 # if __name__ == "__main__":
 #     latency = 0.1  # seconds, change as needed
