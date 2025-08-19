@@ -44,7 +44,8 @@ def get_short_control():
             long_out = "forward"
         elif long_cmd == "back":
             long_out = "back"
-
+    else:
+        return "N/A", "N/A"
     return lat_out, long_out
 
 # if __name__ == "__main__":

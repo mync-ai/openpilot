@@ -69,7 +69,7 @@ def main():
       while True:
         lat_cmd, long_cmd = get_short_control()
         print(f"Received: {lat_cmd}, {long_cmd}")
-        if lat_cmd and long_cmd:
+        if lat_cmd != "N/A" and long_cmd != "N/A":
           msg = lat_cmd + " " + long_cmd
         else:
           msg = "Invalid data"
