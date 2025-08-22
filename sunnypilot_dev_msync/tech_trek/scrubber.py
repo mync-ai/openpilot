@@ -1,11 +1,8 @@
 import pandas as pd
-import sys
-import tty
-import time
-import termios
-import argparse
-import os
+from helper import get_char, ns_to_ms, get_data_directory, resolve_filename
 from datetime import datetime
+import sys
+import os
 import cereal.messaging as messaging
 
 subscriptions = ['carState']
@@ -20,10 +17,6 @@ def print_time():
       timestamp = sm.logMonoTime['carState']
     return timestamp
 
-
-def ns_to_ms(nanoseconds):
-    """Convert nanoseconds to milliseconds"""
-    return nanoseconds / 1e6
 
 
 def load_existing_csv(filename):
@@ -44,26 +37,17 @@ def load_existing_csv(filename):
         return [], []
 
 
-def get_char():
-    """Get a single character from stdin without pressing Enter"""
-    fd = sys.stdin.fileno()
-    old_settings = termios.tcgetattr(fd)
-    try:
-        tty.setraw(fd)
-        ch = sys.stdin.read(1)
-    finally:
-        termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
-    return ch
-
-
 def main():
     # Parse command line arguments
     if len(sys.argv) > 1:
         input_filename = sys.argv[1]
-        print(f"Loading existing CSV file: {input_filename}")
-        log_time, log_cmd = load_existing_csv(input_filename)
+        resolved_filename = resolve_filename(input_filename)
+        print(f"Looking for CSV file: {input_filename}")
+        print(f"Resolved to: {resolved_filename}")
+        log_time, log_cmd = load_existing_csv(resolved_filename)
         if log_time and log_cmd:
             print(f"Loaded {len(log_cmd)} existing commands")
+        input_filename = resolved_filename  # Use resolved path for saving
     else:
         input_filename = None
         log_time = []
@@ -77,8 +61,6 @@ def main():
         ']': 'hard right',
         'b': 'back',
         'f': 'forward',
-        ',': 'hard back',
-        '.': 'hard forward',
         'n': 'neutral',
         'q': 'quit'
     }
@@ -135,12 +117,14 @@ def main():
             # If we loaded from an existing file, save back to the same file
             filename = input_filename
         elif log_time:
-            # Use the first timestamp as integer milliseconds
+            # Use the first timestamp as integer milliseconds, save to data directory
             first_timestamp_ms = int(log_time[0])
-            filename = f"scrubber_log_{first_timestamp_ms}.csv"
+            data_dir = get_data_directory()
+            filename = os.path.join(data_dir, f"scrubber_log_{first_timestamp_ms}.csv")
         else:
-            # Fallback to datetime
-            filename = f"scrubber_log_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
+            # Fallback to datetime, save to data directory
+            data_dir = get_data_directory()
+            filename = os.path.join(data_dir, f"scrubber_log_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv")
 
         df.to_csv(filename, index=False)
         print(f"\nLog saved to {filename}")

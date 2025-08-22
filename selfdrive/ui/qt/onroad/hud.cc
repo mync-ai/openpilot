@@ -88,16 +88,16 @@ void HudRenderer::updateSeatControlState(const SubMaster &sm) {
         lateral_str = "BACK";
         break;
       case 3: // mildLeft
-        lateral_str = "MILD_LEFT";
+        lateral_str = "MILD LEFT";
         break;
       case 4: // mildRight
-        lateral_str = "MILD_RIGHT";
+        lateral_str = "MILD RIGHT";
         break;
       case 5: // hardLeft
-        lateral_str = "HARD_LEFT";
+        lateral_str = "HARD LEFT";
         break;
       case 6: // hardRight
-        lateral_str = "HARD_RIGHT";
+        lateral_str = "HARD RIGHT";
         break;
       default:
         lateral_str = QString("UNK_%1").arg((int)lateral_command);
@@ -118,16 +118,16 @@ void HudRenderer::updateSeatControlState(const SubMaster &sm) {
         longitudinal_str = "BACK";
         break;
       case 3: // mildLeft
-        longitudinal_str = "MILD_LEFT";
+        longitudinal_str = "MILD LEFT";
         break;
       case 4: // mildRight
-        longitudinal_str = "MILD_RIGHT";
+        longitudinal_str = "MILD RIGHT";
         break;
       case 5: // hardLeft
-        longitudinal_str = "HARD_LEFT";
+        longitudinal_str = "HARD LEFT";
         break;
       case 6: // hardRight
-        longitudinal_str = "HARD_RIGHT";
+        longitudinal_str = "HARD RIGHT";
         break;
       default:
         longitudinal_str = QString("UNK_%1").arg((int)longitudinal_command);
@@ -233,8 +233,8 @@ void HudRenderer::drawSeatControlCommand(QPainter &p, const QRect &surface_rect)
   // Position the seat control display on the right side, below where experimental button would be
   const int border_size = 30;
   const int button_size = 192;
-  const int width = 480;
-  const int height = 280; // Increased height for two command lines
+  const int width = 440;
+  const int height = 180; // Reduced height for single line
   int alpha = 200;
 
   int x = surface_rect.width() - border_size - width;
@@ -250,7 +250,7 @@ void HudRenderer::drawSeatControlCommand(QPainter &p, const QRect &surface_rect)
   // Draw "SEAT CONTROL" label
   p.setFont(InterFont(55, QFont::Normal));
   QColor seat_label_color(0xf6, 0xf6, 0xf6); // #f6f6f6
-  drawColoredText(p, seat_control_rect.center().x(), seat_control_rect.top() + 65, "SEAT CONTROL", seat_label_color, alpha);
+  drawColoredText(p, seat_control_rect.center().x(), seat_control_rect.top() + 65, "HAPTIC SIGNAL", seat_label_color, alpha);
 
   // Helper function to get command color
   auto getCommandColor = [](const QString &command) -> QColor {
@@ -260,23 +260,50 @@ void HudRenderer::drawSeatControlCommand(QPainter &p, const QRect &surface_rect)
       return QColor(0xa3, 0xff, 0xac); // #a3ffac
     } else if (command == "BACK") {
       return QColor(0xff, 0x6b, 0x55); // #ff6b55
-    } else if (command == "MILD_LEFT" || command == "MILD_RIGHT") {
+    } else if (command == "MILD LEFT" || command == "MILD RIGHT") {
       return QColor(0xff, 0xfa, 0x68); // #fffa68
-    } else if (command == "HARD_LEFT" || command == "HARD_RIGHT") {
+    } else if (command == "HARD LEFT" || command == "HARD RIGHT") {
       return QColor(0xff, 0xa2, 0x39); // #ffa239
+    } else if (command == "NONE") {
+      return QColor(0x80, 0x80, 0x80); // #808080 gray for NONE
     } else {
       return QColor(0xf6, 0xf6, 0xf6); // Default #f6f6f6
     }
   };
 
-  // Draw lateral command with label
-  p.setFont(InterFont(50, QFont::Bold));
-  QString lateral_text = QString("Lat: %1").arg(seat_control_lateral_command);
-  QColor lateral_color = getCommandColor(seat_control_lateral_command);
-  drawColoredText(p, seat_control_rect.center().x(), seat_control_rect.top() + 140, lateral_text, lateral_color, alpha);
+  // Determine the display text based on signal availability
+  QString display_text;
+  QColor text_color;
 
-  // Draw longitudinal command with label
-  QString longitudinal_text = QString("Long: %1").arg(seat_control_longitudinal_command);
-  QColor longitudinal_color = getCommandColor(seat_control_longitudinal_command);
-  drawColoredText(p, seat_control_rect.center().x(), seat_control_rect.top() + 215, longitudinal_text, longitudinal_color, alpha);
+  // Check if we have valid signals
+  bool has_signal = (seat_control_lateral_command != "NO_SUB" &&
+                     seat_control_lateral_command != "NO_SVC" &&
+                     seat_control_lateral_command != "ERROR" &&
+                     seat_control_lateral_command != "WAITING" &&
+                     seat_control_longitudinal_command != "NO_SUB" &&
+                     seat_control_longitudinal_command != "NO_SVC" &&
+                     seat_control_longitudinal_command != "ERROR" &&
+                     seat_control_longitudinal_command != "WAITING");
+
+  if (!has_signal) {
+    display_text = "NONE";
+    text_color = getCommandColor("NONE");
+  } else {
+    // Show only the active (non-neutral) command
+    if (seat_control_lateral_command != "NEUTRAL") {
+      display_text = seat_control_lateral_command;
+      text_color = getCommandColor(seat_control_lateral_command);
+    } else if (seat_control_longitudinal_command != "NEUTRAL") {
+      display_text = seat_control_longitudinal_command;
+      text_color = getCommandColor(seat_control_longitudinal_command);
+    } else {
+      // Both are neutral
+      display_text = "NEUTRAL";
+      text_color = getCommandColor("NEUTRAL");
+    }
+  }
+
+  // Draw the single line command display
+  p.setFont(InterFont(70, QFont::Bold));
+  drawColoredText(p, seat_control_rect.center().x(), seat_control_rect.top() + 140, display_text, text_color, alpha);
 }
