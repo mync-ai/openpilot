@@ -46,7 +46,7 @@ class channel:
         # print(f"Connected to {ip}:{port}")
         # return s
         return
-      except (OSError, socket.error) as e:
+      except (OSError, socket.error, socket.timeout) as e:
         print(f"Connection failed: {e}. Retrying in {retry_delay}s...")
         time.sleep(retry_delay)
 
@@ -64,8 +64,8 @@ def main():
   telemetry_threads = []
   def TCP1_thread():
     while True:
-      TCP1_channel.connect("192.168.1.111", 9999, retry_delay=2)
       try:
+        TCP1_channel.connect("192.168.1.111", 9999, retry_delay=2)
         while True:
           cmd = get_short_control()
           print(f"Maneuver received: {cmd}")
@@ -89,7 +89,6 @@ def main():
       try:
         while True:
           gpsinfo = get_gps()
-          print(f"GPS received: {gpsinfo}")
           if not gpsinfo:
             gpsinfo = ""
           TCP2_channel.socket.sendall(gpsinfo.encode('utf-8'))
