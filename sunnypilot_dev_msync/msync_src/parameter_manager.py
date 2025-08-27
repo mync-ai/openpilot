@@ -19,8 +19,10 @@ class SeatControlParameterManager:
         'turn_thresh_2': 2.5,
         'accel_thresh': 2.0,
         'decel_thresh': 2.0,
-        'long_smoothing': 3,
-        'lat_smoothing': 3,
+        'long_sens': 3,
+        'lat_sens': 3,
+        'long_sticky': 3,
+        'lat_sticky': 3,
         'horizon': 3.0,
         'use_plan': False,
     }
@@ -31,8 +33,10 @@ class SeatControlParameterManager:
         'turn_thresh_2': (0.1, 15.0),
         'accel_thresh': (0.1, 10.0),
         'decel_thresh': (0.1, 10.0),
-        'long_smoothing': (1, 20),
-        'lat_smoothing': (1, 20),
+        'long_sens': (1, 20),
+        'lat_sens': (1, 20),
+        'long_sticky': (1, 20),
+        'lat_sticky': (1, 20),
         'horizon': (0.5, 10.0),
         'use_plan': (False, True),
     }
@@ -81,7 +85,7 @@ class SeatControlParameterManager:
             if name == 'use_plan':
                 if not isinstance(value, bool):
                     return False, f"Parameter {name} must be boolean"
-            elif name in ('frequency', 'long_smoothing', 'lat_smoothing'):
+            elif name in ('frequency', 'long_sens', 'lat_sens', 'long_sticky', 'lat_sticky'):
                 if not isinstance(value, int):
                     return False, f"Parameter {name} must be integer"
                 lo, hi = self.PARAM_RANGES[name]

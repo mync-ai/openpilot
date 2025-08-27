@@ -267,6 +267,9 @@ def print_car_state(sub):
     if hasattr(sub, 'rightBlinker'):
         print(f"Right Blinker: {sub.rightBlinker}")
 
+    if hasattr(sub, 'gearShifter'):
+        print(f"Gear Shifter: {sub.gearShifter}")
+
     print()
 
 def print_plan(sub_long, prev_value=None):
@@ -357,12 +360,11 @@ def parse_messages(interesting_subs, latency, verbose=False):
 
 
 
-
 if __name__ == "__main__":
     latency = 0.1  # seconds, change as needed
 
     # Parsing options: 'modelV2', 'longitudinalPlan', 'radarState', 'carControl', 'carState'
-    interesting_subs = ['modelV2', 'carState']
+    interesting_subs = ['carState']
 
     # Set verbose=True to see detailed field-by-field output
     # Set verbose=False to use the original compact display format

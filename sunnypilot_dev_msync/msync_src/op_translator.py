@@ -24,7 +24,8 @@ def extract_data(sm, interesting_subs):
         'velocity_plan': None,
         'confidence': None,
         'left_blinker': None,
-        'right_blinker': None
+        'right_blinker': None,
+        'gear_shifter': None
     }
 
     # Extract model data
@@ -63,6 +64,8 @@ def extract_data(sm, interesting_subs):
             result['vEgo'] = car_sub.vEgo
         if hasattr(car_sub, 'aEgo'):
             result['aEgo'] = car_sub.aEgo
+        if hasattr(car_sub, 'gearShifter'):
+            result['gear_shifter'] = car_sub.gearShifter
 
     return result
 
@@ -79,7 +82,7 @@ def execute_control(decider, submaster, interesting_subs=['modelV2', 'carState']
         data = extract_data(submaster, interesting_subs)
 
         # Only check for essential data that we actually need
-        required_data = ['acceleration_pred', 'velocity_pred', 'left_blinker', 'right_blinker', 'vEgo', 'aEgo']
+        required_data = ['acceleration_pred', 'velocity_pred', 'left_blinker', 'right_blinker', 'vEgo', 'aEgo', 'gear_shifter']
         has_required_data = all(data.get(key) is not None for key in required_data)
 
         if has_required_data:
@@ -109,7 +112,10 @@ if __name__ == "__main__":
     # SubMaster subscribes to selected message types
     sm = messaging.SubMaster(subscriptions)
 
-    decider = short_control.Decider(turn_thresh_1=1.0, turn_thresh_2=2.5, accel_thresh=2.0, decel_thresh=2.0, long_smoothing=3, lat_smoothing=3, use_plan=False)
+    decider = short_control.Decider(
+        turn_thresh_1=1.0, turn_thresh_2=2.5, accel_thresh=2.0, decel_thresh=2.0,
+        long_sens=3, lat_sens=3, long_sticky=3, lat_sticky=3, use_plan=False
+    )
     # Set verbose=True to see detailed field-by-field output
     # Set verbose=False to use the original compact display format
     # parse_messages(interesting_subs, latency, verbose=True)

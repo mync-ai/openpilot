@@ -33,7 +33,8 @@ class Decider:
 
     def __init__(self, *, turn_thresh_1=1.0, turn_thresh_2=2.0,
                  accel_thresh=1.0, decel_thresh=1.0,
-                 long_smoothing=5, lat_smoothing=5,
+                 long_sens=5, lat_sens=5,
+                 long_sticky=3, lat_sticky=3,
                  horizon=3.0, use_plan=True):
         # Prediction buffers
         self.accelX_pred = []
@@ -56,19 +57,22 @@ class Decider:
         self.turn_thr2 = turn_thresh_2
         self.accel_thr = accel_thresh
         self.decel_thr = decel_thresh
-        self.long_smooth = max(1, int(long_smoothing))
-        self.lat_smooth = max(1, int(lat_smoothing))
+        self.long_smooth = max(1, int(long_sens))
+        self.lat_smooth = max(1, int(lat_sens))
+        self.long_sticky = max(1, int(long_sticky))
+        self.lat_sticky = max(1, int(lat_sticky))
         self.horizon = horizon
 
         # Signals
         self.lft_blnk = 0
         self.rght_blnk = 0
+        self.gear = 'drive'
 
         # Independent domain states (smoothed) & histories
         self.long_state = self.NEUTRAL
         self.lat_state = self.NEUTRAL
-        self._long_history = deque(maxlen=self.long_smooth)
-        self._lat_history = deque(maxlen=self.lat_smooth)
+        self._long_history = deque()  # No maxlen - we'll manage size dynamically
+        self._lat_history = deque()   # No maxlen - we'll manage size dynamically
 
         # Compute horizon-limited indices once (depends on horizon)
         self.ind_pred = self._compute_horizon_indices(self.PRED_TIME)
@@ -101,6 +105,7 @@ class Decider:
             self.rght_blnk = new_data['right_blinker']
             self.vel = float(new_data['vEgo'])
             self.accel = float(new_data['aEgo'])
+            self.gear = new_data['gear_shifter']
             self.stopped = self.vel <= 0.05  # ~0.18 km/h threshold
             # Update kinetime slice for lateral conflict resolution (limit to horizon)
             self.kinetime = self.PRED_TIME[:self.ind_pred]
@@ -131,19 +136,31 @@ class Decider:
         """Update smoothing history for a domain ('lat' or 'long').
 
         If the history (size == required window) is homogeneous, commit state.
+        Uses sticky values when current state is not neutral, smooth values when neutral.
         Returns committed state (int).
         """
         if domain == 'lat':
             history = self._lat_history
-            required = self.lat_smooth
+            current_state = self.lat_state
+            # Use sticky value if current state is not neutral, otherwise use smooth
+            required = self.lat_sticky if current_state != self.NEUTRAL else self.lat_smooth
             state_attr = 'lat_state'
         else:
             history = self._long_history
-            required = self.long_smooth
+            current_state = self.long_state
+            # Use sticky value if current state is not neutral, otherwise use smooth
+            required = self.long_sticky if current_state != self.NEUTRAL else self.long_smooth
             state_attr = 'long_state'
 
         history.append(new_decision)
-        if len(history) == required and all(h == new_decision for h in history):
+
+        # Trim history to the maximum required size (max of smooth and sticky)
+        max_required = max(self.lat_smooth, self.lat_sticky) if domain == 'lat' else max(self.long_smooth, self.long_sticky)
+        while len(history) > max_required:
+            history.popleft()
+
+        # Check if we have enough history and all entries match
+        if len(history) >= required and all(h == new_decision for h in list(history)[-required:]):
             setattr(self, state_attr, new_decision)
         return getattr(self, state_attr)
 
@@ -214,6 +231,8 @@ class Decider:
         """Combine driver intent (turn) and predictive (curve)."""
         t = self.turn()
         c = self.curve()
+        if self.gear != 'drive':
+            return self.NEUTRAL
         if t == self.NEUTRAL and c == self.NEUTRAL:
             return self.NEUTRAL
         if t != self.NEUTRAL and c == self.NEUTRAL:
@@ -252,6 +271,8 @@ class Decider:
         """Combine accelerate and stop signals with priority: BACK > FORWARD."""
         acc = self.accelerate()
         dec = self.stop()
+        if self.gear != 'drive':
+            return self.NEUTRAL
         if dec == self.BACK:
             return self.BACK
         if acc == self.FORWARD:

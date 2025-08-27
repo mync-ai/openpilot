@@ -67,8 +67,10 @@ class EnhancedSeatControlService:
                 turn_thresh_2=self.current_config['turn_thresh_2'],
                 accel_thresh=self.current_config['accel_thresh'],
                 decel_thresh=self.current_config['decel_thresh'],
-                long_smoothing=self.current_config['long_smoothing'],
-                lat_smoothing=self.current_config['lat_smoothing'],
+                long_sens=self.current_config['long_sens'],
+                lat_sens=self.current_config['lat_sens'],
+                long_sticky=self.current_config['long_sticky'],
+                lat_sticky=self.current_config['lat_sticky'],
                 horizon=self.current_config['horizon'],
                 use_plan=self.current_config['use_plan']
             )
@@ -215,8 +217,10 @@ def main():
     parser.add_argument('--turn-thresh-2', type=float, default=2.0, help='Second turn threshold')
     parser.add_argument('--accel-thresh', type=float, default=1.0, help='Acceleration threshold')
     parser.add_argument('--decel-thresh', type=float, default=1.0, help='Deceleration threshold')
-    parser.add_argument('--long-smoothing', type=int, default=5, help='Longitudinal smoothing window')
-    parser.add_argument('--lat-smoothing', type=int, default=5, help='Lateral smoothing window')
+    parser.add_argument('--long-sens', type=int, default=5, help='Longitudinal sensitivity window')
+    parser.add_argument('--lat-sens', type=int, default=5, help='Lateral sensitivity window')
+    parser.add_argument('--long-sticky', type=int, default=3, help='Longitudinal sticky window')
+    parser.add_argument('--lat-sticky', type=int, default=3, help='Lateral sticky window')
     parser.add_argument('--horizon', type=float, default=3.0, help='Time horizon for predictions in seconds')
     parser.add_argument('--use-plan', action='store_true', default=True,
                        help='Use plan data instead of prediction data for longitudinal decisions')
@@ -236,8 +240,10 @@ def main():
             'turn_thresh_2': args.turn_thresh_2,
             'accel_thresh': args.accel_thresh,
             'decel_thresh': args.decel_thresh,
-            'long_smoothing': args.long_smoothing,
-            'lat_smoothing': args.lat_smoothing,
+            'long_sens': args.long_sens,
+            'lat_sens': args.lat_sens,
+            'long_sticky': args.long_sticky,
+            'lat_sticky': args.lat_sticky,
             'horizon': args.horizon,
             'use_plan': args.use_plan
         }

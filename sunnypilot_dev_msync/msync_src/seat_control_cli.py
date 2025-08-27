@@ -28,7 +28,7 @@ from sunnypilot_dev_msync.msync_src.parameter_manager import SeatControlParamete
 
 PARAM_DISPLAY_ORDER = [
     'frequency', 'turn_thresh_1', 'turn_thresh_2', 'accel_thresh', 'decel_thresh',
-    'long_smoothing', 'lat_smoothing', 'horizon', 'use_plan'
+    'long_sens', 'lat_sens', 'long_sticky', 'lat_sticky', 'horizon', 'use_plan'
 ]
 
 COLOR_OK = '\033[92m'
@@ -61,7 +61,7 @@ def parse_set_args(pairs: list[str]) -> dict[str, Any]:
       v_conv: Any = v.lower() in ('1', 'true', 'yes', 'on')
     else:
       try:
-        if k in ('frequency', 'long_smoothing', 'lat_smoothing'):
+        if k in ('frequency', 'long_sens', 'lat_sens', 'long_sticky', 'lat_sticky'):
           v_conv = int(v)
         else:
           v_conv = float(v)
@@ -113,8 +113,10 @@ Parameters:
   turn_thresh_2 (float 0.1-15.0)
   accel_thresh (float 0.1-10.0)
   decel_thresh (float 0.1-10.0)
-  long_smoothing (int 1-20)
-  lat_smoothing (int 1-20)
+  long_sens (int 1-20)
+  lat_sens (int 1-20)
+  long_sticky (int 1-20)
+  lat_sticky (int 1-20)
   horizon (float 0.5-10.0)
   use_plan (bool true/false)
 """)
