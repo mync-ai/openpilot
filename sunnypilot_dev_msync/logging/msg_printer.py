@@ -2,7 +2,7 @@ from sub_fields import *
 import sys
 import time
 
-subscriptions = ['carState', 'carControl', 'modelV2', 'longitudinalPlan', 'radarState']
+subscriptions = ['carState', 'carControl', 'modelV2', 'longitudinalPlan', 'radarState', 'gnssMeasurements']
 # SubMaster subscribes to selected message types
 sm = messaging.SubMaster(subscriptions)
 
@@ -269,6 +269,10 @@ def print_car_state(sub):
 
     if hasattr(sub, 'gearShifter'):
         print(f"Gear Shifter: {sub.gearShifter}")
+    if hasattr(sub, 'vEgo'):
+        print(f"Left Blinker: {sub.vEgo}")
+    if hasattr(sub, 'aEgo'):
+        print(f"Right Blinker: {sub.aEgo}")
 
     print()
 
@@ -316,6 +320,22 @@ def print_controls(sub):
     print(f"Brake: {sub.brake:.2f}")
     print(f"Gear: {sub.gear}")
 
+def print_gps(sub):
+    """
+    Reads and processes GPS messages.
+    """
+    if sub.kalmanPositionECEF.valid == 0:
+        return
+    print("=== GPS ===")
+    if hasattr(sub, 'kalmanPositionECEF'):
+        print(f"Position: {sub.kalmanPositionECEF}")
+    if hasattr(sub, 'kalmanVelocityECEF'):
+        print(f"Velocity: {sub.kalmanVelocityECEF}")
+    if hasattr(sub, 'positionECEF'):
+        print(f"Position: {sub.kalmanPositionECEF}")
+    if hasattr(sub, 'velocityECEF'):
+        print(f"Velocity: {sub.kalmanVelocityECEF}")
+    print()
 
 def parse_messages(interesting_subs, latency, verbose=False):
     print("Starting MSync parsing...\n")
@@ -354,6 +374,11 @@ def parse_messages(interesting_subs, latency, verbose=False):
             if verbose:
                 print_car_state(state_sub)
 
+        if sm.updated['gnssMeasurements'] and 'gnssMeasurements' in interesting_subs:
+            gps_sub = sm['gnssMeasurements']
+            if verbose:
+                print_gps(gps_sub)
+
         if not verbose:
             print_plan(sm['longitudinalPlan'])
         time.sleep(latency)
@@ -364,7 +389,7 @@ if __name__ == "__main__":
     latency = 0.1  # seconds, change as needed
 
     # Parsing options: 'modelV2', 'longitudinalPlan', 'radarState', 'carControl', 'carState'
-    interesting_subs = ['carState']
+    interesting_subs = ['gnssMeasurements']
 
     # Set verbose=True to see detailed field-by-field output
     # Set verbose=False to use the original compact display format

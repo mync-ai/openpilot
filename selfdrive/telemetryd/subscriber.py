@@ -1,14 +1,14 @@
 from openpilot.selfdrive.telemetryd.sub_fields import *
 import sys
 
-subscriptions = ['carState', 'controlsState', 'modelV2', 'longitudinalPlan', 'seatControl', 'gpsLocationExternal']
+subscriptions = ['carState', 'controlsState', 'modelV2', 'longitudinalPlan', 'seatControl', 'gpsLocation']
 # SubMaster subscribes to selected message types
 sm = messaging.SubMaster(subscriptions)
 
 def get_gps():
     sm.update()
-    if sm.updated['gpsLocationExternal']:
-        gps = sm['gpsLocationExternal']
+    if sm.updated['gpsLocation']:
+        gps = sm['gpsLocation']
         gps_out = {
             'timestamp': gps.unixTimestampMillis,
             'latitude': gps.latitude,
