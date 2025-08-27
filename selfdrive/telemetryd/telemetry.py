@@ -67,13 +67,13 @@ def main():
       try:
         TCP1_channel.connect("192.168.1.111", 9999, retry_delay=2)
         while True:
-          cmd = get_short_control()
-          print(f"Maneuver received: {cmd}")
-          if cmd:
-            msg = cmd
+          lat_cmd, long_cmd = get_short_control()
+          print(f"Received: {lat_cmd}, {long_cmd}")
+          if lat_cmd != "N/A" and long_cmd != "N/A":
+            msg = lat_cmd + " " + long_cmd
           else:
             msg = "Invalid data"
-          msg = str(curr_time()) + " " + msg + "\n"
+          msg = str(curr_time()) + " " + msg + " "
           TCP1_channel.socket.sendall(msg.encode('utf-8'))
           time.sleep(0.05)
       except (BrokenPipeError, ConnectionResetError, OSError) as e:
