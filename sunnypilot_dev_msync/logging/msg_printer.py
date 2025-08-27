@@ -2,7 +2,7 @@ from sub_fields import *
 import sys
 import time
 
-subscriptions = ['carState', 'carControl', 'modelV2', 'longitudinalPlan', 'radarState', 'gnssMeasurements']
+subscriptions = ['carState', 'carControl', 'modelV2', 'longitudinalPlan', 'radarState', 'gpsLocationExternal', 'livePose']
 # SubMaster subscribes to selected message types
 sm = messaging.SubMaster(subscriptions)
 
@@ -324,18 +324,43 @@ def print_gps(sub):
     """
     Reads and processes GPS messages.
     """
-    if sub.kalmanPositionECEF.valid == 0:
-        return
     print("=== GPS ===")
-    if hasattr(sub, 'kalmanPositionECEF'):
-        print(f"Position: {sub.kalmanPositionECEF}")
-    if hasattr(sub, 'kalmanVelocityECEF'):
-        print(f"Velocity: {sub.kalmanVelocityECEF}")
-    if hasattr(sub, 'positionECEF'):
-        print(f"Position: {sub.kalmanPositionECEF}")
-    if hasattr(sub, 'velocityECEF'):
-        print(f"Velocity: {sub.kalmanVelocityECEF}")
+    gps_out = {
+        'timestamp': sub.unixTimestampMillis,
+        'latitude': sub.latitude,
+        'longitude': sub.longitude,
+        'vertical_accuracy': sub.verticalAccuracy,
+        'horizontal_accuracy': sub.horizontalAccuracy,
+        'speed': sub.speed
+    }
+    gps_msg = str(gps_out)
+    gps_msg = gps_msg.replace('{', '').replace('}', '').replace(',', ' ')
+    print(gps_msg)
+
+def print_pose(sub):
+    # if sub.velocityDevice.valid == 0:
+    #     return
+    """
+    Reads and processes pose messages.
+    """
+    def print_xyz(data):
+        print("X:", data.x)
+        print("Y:", data.y)
+        print("Z:", data.z)
+
+    print("=== Pose ===")
+    if hasattr(sub, 'velocityDevice'):
+        print("Velocity")
+        print_xyz(sub.velocityDevice)
+    if hasattr(sub, 'accelerationDevice'):
+        print("Acceleration")
+        print_xyz(sub.accelerationDevice)
+    if hasattr(sub, 'angularVelocityDevice'):
+        print("Angular Velocity")
+        print_xyz(sub.angularVelocityDevice)
+
     print()
+
 
 def parse_messages(interesting_subs, latency, verbose=False):
     print("Starting MSync parsing...\n")
@@ -374,10 +399,15 @@ def parse_messages(interesting_subs, latency, verbose=False):
             if verbose:
                 print_car_state(state_sub)
 
-        if sm.updated['gnssMeasurements'] and 'gnssMeasurements' in interesting_subs:
-            gps_sub = sm['gnssMeasurements']
+        if sm.updated['gpsLocationExternal'] and 'gpsLocationExternal' in interesting_subs:
+            gps_sub = sm['gpsLocationExternal']
             if verbose:
                 print_gps(gps_sub)
+
+        if sm.updated['livePose'] and 'livePose' in interesting_subs:
+            pose_sub = sm['livePose']
+            if verbose:
+                print_pose(pose_sub)
 
         if not verbose:
             print_plan(sm['longitudinalPlan'])
@@ -389,7 +419,7 @@ if __name__ == "__main__":
     latency = 0.1  # seconds, change as needed
 
     # Parsing options: 'modelV2', 'longitudinalPlan', 'radarState', 'carControl', 'carState'
-    interesting_subs = ['gnssMeasurements']
+    interesting_subs = ['gpsLocationExternal']
 
     # Set verbose=True to see detailed field-by-field output
     # Set verbose=False to use the original compact display format

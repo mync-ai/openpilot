@@ -2,7 +2,7 @@ import os
 import logging
 import logging.handlers
 import socket
-
+import threading
 import time
 from openpilot.selfdrive.telemetryd.subscriber import *
 
@@ -61,32 +61,74 @@ def main():
   TCP1_channel = channel("TCP1", "tcp1")
   TCP2_channel = channel("TCP2", "tcp2")
 
-  while True:
-    TCP1_channel.connect("192.168.1.111", 9999, retry_delay=2)
-    # TCP2_channel.connect("192.168.1.110", 9998, retry_delay=2)
-    tel_idx = 0
-    try:
-      while True:
-        lat_cmd, long_cmd = get_short_control()
-        print(f"Received: {lat_cmd}, {long_cmd}")
-        if lat_cmd != "N/A" and long_cmd != "N/A":
-          msg = lat_cmd + " " + long_cmd
-        else:
-          msg = "Invalid data"
-        msg = str(curr_time()) + " " + msg + " "
+  telemetry_threads = []
+  def TCP1_thread():
+    while True:
+      TCP1_channel.connect("192.168.1.111", 9999, retry_delay=2)
+      try:
+        while True:
+          cmd = get_short_control()
+          print(f"Maneuver received: {cmd}")
+          if cmd:
+            msg = cmd
+          else:
+            msg = "Invalid data"
+          msg = str(curr_time()) + " " + msg + "\n"
+          TCP1_channel.socket.sendall(msg.encode('utf-8'))
+          time.sleep(0.05)
+      except (BrokenPipeError, ConnectionResetError, OSError) as e:
+        print(f"TCP1 connection lost: {e}")
+        TCP1_channel.socket.close()
+        TCP1_channel.socket = TCP1_channel.create_socket()
+        print("TCP1 reconnecting...")
+        time.sleep(1)
 
-        # msg = str(curr_time())+" test_"+str(tel_idx)
+  def TCP2_thread():
+    while True:
+      TCP2_channel.connect("192.168.1.111", 9998, retry_delay=2)
+      try:
+        while True:
+          gpsinfo = get_gps()
+          print(f"GPS received: {gpsinfo}")
+          if not gpsinfo:
+            gpsinfo = ""
+          TCP2_channel.socket.sendall(gpsinfo.encode('utf-8'))
+          time.sleep(0.05)
+      except (BrokenPipeError, ConnectionResetError, OSError) as e:
+        print(f"TCP2 Connection lost: {e}")
+        TCP2_channel.socket.close()
+        TCP2_channel.socket = TCP2_channel.create_socket()
+        print("TCP2 reconnecting...")
+        time.sleep(1)
+  telemetry_threads.append(threading.Thread(target=TCP1_thread))
+  telemetry_threads.append(threading.Thread(target=TCP2_thread))
+  for thread in telemetry_threads:
+    thread.start()
 
-        TCP1_channel.socket.sendall(msg.encode('utf-8'))
-        # tel_idx += 1
-        # print(f"Sent: {tel_idx}")
-        time.sleep(0.05)
-    except (BrokenPipeError, ConnectionResetError, OSError) as e:
-      print(f"Connection lost: {e}")
-      TCP1_channel.socket.close()
-      TCP1_channel.socket = TCP1_channel.create_socket()
-      print("Reconnecting...")
-      time.sleep(1)
+  # while True:
+  #   TCP1_channel.connect("192.168.1.111", 9999, retry_delay=2)
+  #   try:
+  #     while True:
+  #       cmd = get_short_control()
+  #       print(f"Received: {cmd}")
+  #       if cmd:
+  #         msg = cmd
+  #       else:
+  #         msg = " Invalid data"
+  #       msg = str(curr_time()) + " " + msg + "\n"
+
+  #       # msg = str(curr_time())+" test_"+str(tel_idx)
+
+  #       TCP1_channel.socket.sendall(msg.encode('utf-8'))
+  #       # tel_idx += 1
+  #       # print(f"Sent: {tel_idx}")
+  #       time.sleep(0.05)
+  #   except (BrokenPipeError, ConnectionResetError, OSError) as e:
+  #     print(f"Connection lost: {e}")
+  #     TCP1_channel.socket.close()
+  #     TCP1_channel.socket = TCP1_channel.create_socket()
+  #     print("Reconnecting...")
+  #     time.sleep(1)
 
 if __name__ == "__main__":
     main()

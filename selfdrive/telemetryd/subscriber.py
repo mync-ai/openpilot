@@ -17,7 +17,9 @@ def get_gps():
             'horizontal_accuracy': gps.horizontalAccuracy,
             'speed': gps.speed
         }
-        return gps_out
+        gps_msg = str(gps_out)
+        gps_msg = gps_msg.replace('{', '').replace('}', '').replace(',', ' ')
+        return gps_msg
 
 def get_short_control():
     sm.update()
