@@ -1,8 +1,9 @@
 from sub_fields import *
 import sys
 import time
+import argparse
 
-subscriptions = ['carState', 'carControl', 'modelV2', 'longitudinalPlan', 'radarState', 'gpsLocationExternal', 'livePose']
+subscriptions = ['carState', 'carControl', 'modelV2', 'longitudinalPlan', 'radarState', 'gpsLocationExternal', 'livePose', 'accelerometer']
 # SubMaster subscribes to selected message types
 sm = messaging.SubMaster(subscriptions)
 
@@ -228,6 +229,7 @@ def print_car_control(sub):
 def print_car_state(sub):
     """
     Reads and processes CarState messages.
+    aEgo - forward is positive, backward is negative
     """
     print("=== CarState ===")
 
@@ -270,9 +272,13 @@ def print_car_state(sub):
     if hasattr(sub, 'gearShifter'):
         print(f"Gear Shifter: {sub.gearShifter}")
     if hasattr(sub, 'vEgo'):
-        print(f"Left Blinker: {sub.vEgo}")
+        print(f"vEgo: {sub.vEgo}")
     if hasattr(sub, 'aEgo'):
-        print(f"Right Blinker: {sub.aEgo}")
+        print(f"aEgo: {sub.aEgo}")
+    if hasattr(sub, 'aEgoRaw'):
+        print(f"aEgoRaw: {sub.aEgoRaw}")
+    if hasattr(sub, 'vEgoRaw'):
+        print(f"vEgoRaw: {sub.vEgoRaw}")
 
     print()
 
@@ -362,6 +368,42 @@ def print_pose(sub):
     print()
 
 
+def print_accelerometer(sub):
+    """
+    Reads and processes accelerometer messages.
+    X - sky is negative, ground is positive
+    Y - right is negative, left is positive
+    Z - forward is negative, backward is positive
+    """
+    print("=== Accelerometer ===")
+
+    # Sensor info
+    if hasattr(sub, 'sensor'):
+        print(f"Sensor ID: {sub.sensor}")
+    if hasattr(sub, 'type'):
+        print(f"Type: {sub.type}")
+
+    # Source
+    if hasattr(sub, 'source'):
+        print(f"Source: {sub.source}")
+
+    # Acceleration data
+    if hasattr(sub, 'acceleration'):
+        accel = sub.acceleration
+        if hasattr(accel, 'v') and len(accel.v) >= 3:
+            print(f"Acceleration X: {accel.v[0]:.3f} m/s²")
+            print(f"Acceleration Y: {accel.v[1]:.3f} m/s²")
+            print(f"Acceleration Z: {accel.v[2]:.3f} m/s²")
+            print(f"Magnitude: {(accel.v[0]**2 + accel.v[1]**2 + accel.v[2]**2)**0.5:.3f} m/s²")
+        elif hasattr(accel, 'v') and len(accel.v) > 0:
+            print(f"Acceleration Values: [{', '.join([f'{val:.3f}' for val in accel.v])}] m/s²")
+
+        if hasattr(accel, 'status'):
+            print(f"Status: {accel.status}")
+
+    print()
+
+
 def parse_messages(interesting_subs, latency, verbose=False):
     print("Starting MSync parsing...\n")
     prev_accel = None
@@ -409,6 +451,11 @@ def parse_messages(interesting_subs, latency, verbose=False):
             if verbose:
                 print_pose(pose_sub)
 
+        if sm.updated['accelerometer'] and 'accelerometer' in interesting_subs:
+            accel_sub = sm['accelerometer']
+            if verbose:
+                print_accelerometer(accel_sub)
+
         if not verbose:
             print_plan(sm['longitudinalPlan'])
         time.sleep(latency)
@@ -416,10 +463,12 @@ def parse_messages(interesting_subs, latency, verbose=False):
 
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument('subscriptions', default='carState', nargs='*')
+    args = parser.parse_args()
     latency = 0.1  # seconds, change as needed
-
-    # Parsing options: 'modelV2', 'longitudinalPlan', 'radarState', 'carControl', 'carState'
-    interesting_subs = ['gpsLocationExternal']
+    # Parsing options: 'modelV2', 'longitudinalPlan', 'radarState', 'carControl', 'carState', 'gpsLocationExternal', 'livePose', 'accelerometer'
+    interesting_subs = args.subscriptions
 
     # Set verbose=True to see detailed field-by-field output
     # Set verbose=False to use the original compact display format
