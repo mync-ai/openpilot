@@ -3,7 +3,7 @@ import time
 
 def main():
   while True:
-    gps_data = get_gps()
+    gps_data = get_imu()
     if gps_data:
       print(f"GPS Data: {gps_data}")
     else:

@@ -355,6 +355,25 @@ def print_pose(sub):
         print("Z:", data.z)
 
     print("=== Pose ===")
+    # Orientation (Roll, Pitch, Yaw) in NED frame
+    if hasattr(sub, 'orientationNED'):
+        orient = sub.orientationNED
+        if hasattr(orient, 'valid') and orient.valid:
+            # Convert from radians to degrees for readability
+            roll_deg = orient.x * 180.0 / 3.14159
+            pitch_deg = orient.y * 180.0 / 3.14159
+            yaw_deg = orient.z * 180.0 / 3.14159
+            roll_std_deg = orient.xStd * 180.0 / 3.14159
+            pitch_std_deg = orient.yStd * 180.0 / 3.14159
+            yaw_std_deg = orient.zStd * 180.0 / 3.14159
+
+            print("Orientation NED (valid):")
+            print(f"  Roll:  {roll_deg:+7.2f}° ± {roll_std_deg:.2f}°")
+            print(f"  Pitch: {pitch_deg:+7.2f}° ± {pitch_std_deg:.2f}°")
+            print(f"  Yaw:   {yaw_deg:+7.2f}° ± {yaw_std_deg:.2f}°")
+        else:
+            print("Orientation NED (invalid)")
+
     if hasattr(sub, 'velocityDevice'):
         print("Velocity")
         print_xyz(sub.velocityDevice)

@@ -21,6 +21,32 @@ def get_gps():
         gps_msg = gps_msg.replace('{', '').replace('}', '').replace(',', ' ')
         return gps_msg
 
+def get_imu():
+    sm.update()
+    if sm.updated['livePose']:
+        pose = sm['livePose']
+        vel = pose.velocityDevice
+        accel = pose.accelerationDevice
+        angular = pose.angularVelocityDevice
+        orient = pose.orientationNED
+        pose_out = {
+            'vX': vel.x,
+            'vY': vel.y,
+            'vZ': vel.z,
+            'aX': accel.x,
+            'aY': accel.y,
+            'aZ': accel.z,
+            'wX': angular.x,
+            'wY': angular.y,
+            'wZ': angular.z,
+            'roll': orient.x,
+            'pitch': orient.y,
+            'yaw': orient.z
+        }
+        imu_msg = str(pose_out)
+        imu_msg = imu_msg.replace('{', '').replace('}', '').replace(',', ' ')
+        return imu_msg
+
 def get_short_control():
     sm.update()
     lat_out = "neutral"

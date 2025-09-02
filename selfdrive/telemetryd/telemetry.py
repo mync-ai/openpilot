@@ -60,6 +60,7 @@ def main():
 
   TCP1_channel = channel("TCP1", "tcp1")
   TCP2_channel = channel("TCP2", "tcp2")
+  TCP3_channel = channel("TCP3", "tcp3")
 
   telemetry_threads = []
   def TCP1_thread():
@@ -92,15 +93,36 @@ def main():
           if not gpsinfo:
             gpsinfo = ""
           TCP2_channel.socket.sendall(gpsinfo.encode('utf-8'))
-          time.sleep(0.05)
+          time.sleep(1)
       except (BrokenPipeError, ConnectionResetError, OSError) as e:
         print(f"TCP2 Connection lost: {e}")
         TCP2_channel.socket.close()
         TCP2_channel.socket = TCP2_channel.create_socket()
         print("TCP2 reconnecting...")
         time.sleep(1)
+
+  def TCP3_thread():
+    while True:
+      TCP3_channel.connect("192.168.1.111", 9997, retry_delay=2)
+      try:
+        while True:
+          imu_info = get_imu()
+          if not imu_info:
+            imu_info = ""
+          print(imu_info)
+          TCP3_channel.socket.sendall(imu_info.encode('utf-8'))
+          time.sleep(1)
+      except (BrokenPipeError, ConnectionResetError, OSError) as e:
+        print(f"TCP3 Connection lost: {e}")
+        TCP3_channel.socket.close()
+        TCP3_channel.socket = TCP3_channel.create_socket()
+        print("TCP3 reconnecting...")
+        time.sleep(0.05)
+
   telemetry_threads.append(threading.Thread(target=TCP1_thread))
   telemetry_threads.append(threading.Thread(target=TCP2_thread))
+  telemetry_threads.append(threading.Thread(target=TCP3_thread))
+
   for thread in telemetry_threads:
     thread.start()
 
