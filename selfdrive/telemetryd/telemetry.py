@@ -65,8 +65,8 @@ def main():
   telemetry_threads = []
   def TCP1_thread():
     while True:
+      TCP1_channel.connect("192.168.1.111", 9999, retry_delay=2)
       try:
-        TCP1_channel.connect("192.168.1.111", 9999, retry_delay=2)
         while True:
           lat_cmd, long_cmd = get_short_control()
           print(f"Received: {lat_cmd}, {long_cmd}")
