@@ -73,7 +73,7 @@ def main():
           if lat_cmd != "N/A" and long_cmd != "N/A":
             msg = lat_cmd + " " + long_cmd
           else:
-            msg = "Invalid data"
+            msg = "_ _"
           msg = str(curr_time()) + " " + msg + " "
           TCP1_channel.socket.sendall(msg.encode('utf-8'))
           time.sleep(0.05)

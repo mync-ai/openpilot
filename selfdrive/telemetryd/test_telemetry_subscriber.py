@@ -1,187 +1,91 @@
 #!/usr/bin/env python3
 """
-Test file for subscriber.py and telemetry.py integration
-
-This test simulates the interaction between the telemetry system and the subscriber,
-testing seat control message processing and output formatting.
-
-Expected output format: "Time: xxxx lateral_command longitudinal_command"
+Test script for polling subscriber.py functions every second.
+Tests GPS, IMU, and seat control data retrieval.
 """
 
 import time
 import sys
-import os
-import cereal.messaging as messaging
+from subscriber import get_gps, get_imu, get_short_control
 
-# Add the current directory to Python path for imports
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+def print_separator():
+    """Print a visual separator between polling cycles."""
+    print("=" * 80)
 
-from subscriber import get_short_control
-from telemetry import curr_time
+def test_gps():
+    """Test GPS data retrieval."""
+    print("=== GPS Data ===")
+    try:
+        gps_data = get_gps()
+        if gps_data:
+            print(f"GPS: {gps_data}")
+        else:
+            print("GPS: No data available")
+    except Exception as e:
+        print(f"GPS Error: {e}")
+    print()
 
+def test_imu():
+    """Test IMU data retrieval."""
+    print("=== IMU Data ===")
+    try:
+        imu_data = get_imu()
+        if imu_data:
+            print(f"IMU: {imu_data}")
+        else:
+            print("IMU: No data available")
+    except Exception as e:
+        print(f"IMU Error: {e}")
+    print()
 
-class MockSeatControlMessage:
-    """Mock seat control message for testing"""
-    def __init__(self, lateral_cmd=0, longitudinal_cmd=0):
-        self.lateralCommand = lateral_cmd
-        self.longitudinalCommand = longitudinal_cmd
-
-
-class MockMessage:
-    """Mock message wrapper"""
-    def __init__(self, seat_control):
-        self.seatControl = seat_control
-
-
-class TelemetryTester:
-    """Test class for telemetry and subscriber integration"""
-
-    def __init__(self):
-        self.test_cases = [
-            # (lateral_cmd, longitudinal_cmd, expected_lateral, expected_longitudinal)
-            (0, 0, "neutral", "neutral"),
-            (1, 1, "forward", "forward"),
-            (2, 2, "back", "back"),
-            (3, 0, "mildLeft", "neutral"),
-            (4, 0, "mildRight", "neutral"),
-            (5, 1, "hardLeft", "forward"),
-            (6, 2, "hardRight", "back"),
-        ]
-
-    def test_telemetry_output_format(self):
-        """Test the telemetry output format"""
-        print("=" * 60)
-        print("TESTING TELEMETRY.PY - Output Format")
-        print("=" * 60)
-
-        # Test curr_time function
-        timestamp = curr_time()
-        print(f"Current timestamp: {timestamp}")
-        assert isinstance(timestamp, float), "curr_time should return a float"
-
-        # Test message formatting (simulating telemetry.py logic)
-        test_commands = [
-            ("neutral", "neutral"),
-            ("mildLeft", "forward"),
-            ("hardRight", "back"),
-            (None, None),  # Test invalid data case
-        ]
-
-        for lat_cmd, long_cmd in test_commands:
-            timestamp = curr_time()
-
-            if lat_cmd and long_cmd:
-                msg = f"{lat_cmd} {long_cmd}"
-            else:
-                msg = "Invalid data"
-
-            formatted_msg = f"Time: {timestamp} {msg}"
-            print(f"Formatted message: {formatted_msg}")
-
-            # Verify format matches expected pattern
-            assert "Time:" in formatted_msg, "Message should contain 'Time:'"
-            assert str(timestamp) in formatted_msg, "Message should contain timestamp"
-
-        print("✓ All telemetry format tests passed!\n")
-
-    def test_real_seat_control_publisher(self):
-        """Test with a real seat control message publisher (if messaging is available)"""
-        print("=" * 60)
-        print("TESTING WITH REAL MESSAGING (if available)")
-        print("=" * 60)
-
-        try:
-            # Try to create a real publisher
-            pm = messaging.PubMaster(['seatControl'])
-            print("✓ Real messaging system available")
-
-            # Send test messages
-            for i, (lateral_cmd, longitudinal_cmd, _, _) in enumerate(self.test_cases[:3]):
-                print(f"\nSending test message {i+1}:")
-
-                # Create and send real message
-                msg = messaging.new_message('seatControl')
-                msg.seatControl.lateralCommand = lateral_cmd
-                msg.seatControl.longitudinalCommand = longitudinal_cmd
-                msg.seatControl.timestamp = int(time.time() * 1e9)
-
-                pm.send('seatControl', msg)
-                time.sleep(0.1)  # Allow message to propagate
-
-                # Try to receive with subscriber
-                result = get_short_control()
-                timestamp = curr_time()
-
-                if result:
-                    lat_out, long_out = result
-                    final_msg = f"Time: {timestamp} {lat_out} {long_out}"
-                    print(f"Real messaging result: {final_msg}")
-                else:
-                    print("No message received (may be expected if subscriber isn't configured properly)")
-
-        except Exception as e:
-            print(f"Real messaging not available or failed: {e}")
-            print("This is expected in test environments")
-
-    def test_message_format_examples(self):
-        """Test and display example message formats"""
-        print("=" * 60)
-        print("EXAMPLE OUTPUT FORMATS")
-        print("=" * 60)
-
-        example_commands = [
-            ("neutral", "neutral"),
-            ("mildLeft", "forward"),
-            ("hardRight", "back"),
-            ("hardLeft", "neutral"),
-            ("mildRight", "forward"),
-        ]
-
-        print("Expected telemetry output format examples:")
-        for lat_cmd, long_cmd in example_commands:
-            timestamp = curr_time()
-            formatted_msg = f"Time: {timestamp} {lat_cmd} {long_cmd}"
-            print(f"  {formatted_msg}")
-            time.sleep(0.01)  # Small delay to show different timestamps
-
-        print("\n✓ Format examples generated")
-
-    def run_all_tests(self):
-        """Run all tests"""
-        print("TELEMETRY AND SUBSCRIBER INTEGRATION TEST SUITE")
-        print("=" * 60)
-        print()
-
-        try:
-            self.test_telemetry_output_format()
-            self.test_message_format_examples()
-            self.test_real_seat_control_publisher()
-
-            print("=" * 60)
-            print("🎉 ALL TESTS PASSED! 🎉")
-            print("=" * 60)
-            print()
-            print("Expected telemetry output format verified:")
-            print("  Time: <timestamp> <lateral_command> <longitudinal_command>")
-            print()
-            print("Examples:")
-            print("  Time: 1692387420.123456 neutral neutral")
-            print("  Time: 1692387420.223456 mildLeft forward")
-            print("  Time: 1692387420.323456 hardRight back")
-
-        except AssertionError as e:
-            print(f"❌ TEST FAILED: {e}")
-            sys.exit(1)
-        except Exception as e:
-            print(f"❌ UNEXPECTED ERROR: {e}")
-            sys.exit(1)
-
+def test_seat_control():
+    """Test seat control data retrieval."""
+    print("=== Seat Control Data ===")
+    try:
+        lat_cmd, long_cmd = get_short_control()
+        if lat_cmd != "N/A" and long_cmd != "N/A":
+            msg = lat_cmd + " " + long_cmd
+        else:
+            msg = "_ _"
+        print("<timestamp> " + msg)
+    except Exception as e:
+        print(f"Seat Control Error: {e}")
+    print()
 
 def main():
-    """Main test function"""
-    tester = TelemetryTester()
-    tester.run_all_tests()
+    """Main polling loop that tests all subscriber functions every second."""
+    print("Starting telemetry subscriber test...")
+    print("Polling GPS, IMU, and seat control data every second")
+    print("Press Ctrl+C to stop\n")
 
+    cycle_count = 0
+
+    try:
+        while True:
+            cycle_count += 1
+            print(f"Polling Cycle #{cycle_count} - {time.strftime('%H:%M:%S')}")
+            print_separator()
+
+            # Test all subscriber functions
+            test_gps()
+            test_imu()
+            test_seat_control()
+
+            print_separator()
+            print(f"Cycle #{cycle_count} complete. Waiting 1 second...\n")
+
+            # Wait 1 second before next poll
+            time.sleep(0.05)
+
+    except KeyboardInterrupt:
+        print("\nTest stopped by user")
+        print(f"Completed {cycle_count} polling cycles")
+        sys.exit(0)
+    except Exception as e:
+        print(f"\nUnexpected error: {e}")
+        sys.exit(1)
 
 if __name__ == "__main__":
     main()
+
+

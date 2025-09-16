@@ -1,14 +1,17 @@
 from openpilot.selfdrive.telemetryd.sub_fields import *
 import sys
 
+cmd_telemetry = {'forward':'A', 'back':'B', 'mildLeft':'l', 'mildRight':'r', 'hardLeft':'L', 'hardRight':'R', 'neutral':'N'}
 subscriptions = ['carState', 'controlsState', 'modelV2', 'longitudinalPlan', 'seatControl', 'gpsLocation']
 # SubMaster subscribes to selected message types
-sm = messaging.SubMaster(subscriptions)
+sub_gps = messaging.SubMaster(subscriptions)
+sub_imu = messaging.SubMaster(subscriptions)
+sub_seat = messaging.SubMaster(subscriptions)
 
 def get_gps():
-    sm.update()
-    if sm.updated['gpsLocation']:
-        gps = sm['gpsLocation']
+    sub_gps.update()
+    if sub_gps.updated['gpsLocation']:
+        gps = sub_gps['gpsLocation']
         gps_out = {
             'timestamp': gps.unixTimestampMillis,
             'latitude': gps.latitude,
@@ -22,9 +25,9 @@ def get_gps():
         return gps_msg
 
 def get_imu():
-    sm.update()
-    if sm.updated['livePose']:
-        pose = sm['livePose']
+    sub_imu.update()
+    if sub_imu.updated['livePose']:
+        pose = sub_imu['livePose']
         vel = pose.velocityDevice
         accel = pose.accelerationDevice
         angular = pose.angularVelocityDevice
@@ -48,30 +51,31 @@ def get_imu():
         return imu_msg
 
 def get_short_control():
-    sm.update()
+    sub_seat.update()
     lat_out = "neutral"
     long_out = "neutral"
-    if sm.updated['seatControl']:
-        lat_cmd = sm['seatControl'].lateralCommand
-        long_cmd = sm['seatControl'].longitudinalCommand
+    if sub_seat.updated['seatControl']:
+        lat_cmd = sub_seat['seatControl'].lateralCommand
+        long_cmd = sub_seat['seatControl'].longitudinalCommand
+        lat_out = cmd_telemetry.get(lat_cmd, "N/A")
+        long_out = cmd_telemetry.get(long_cmd, "N/A")
+        # if lat_cmd == "mildLeft":
+        #     lat_out = "mildLeft"
+        # elif lat_cmd == "hardLeft":
+        #     lat_out = "hardLeft"
+        # elif lat_cmd == "hardRight":
+        #     lat_out = "hardRight"
+        # elif lat_cmd == "mildRight":
+        #     lat_out = "mildRight"
+        # elif lat_cmd == "neutral":
+        #     lat_out = "neutral"
 
-        if lat_cmd == "mildLeft":
-            lat_out = "mildLeft"
-        elif lat_cmd == "hardLeft":
-            lat_out = "hardLeft"
-        elif lat_cmd == "hardRight":
-            lat_out = "hardRight"
-        elif lat_cmd == "mildRight":
-            lat_out = "mildRight"
-        elif lat_cmd == "neutral":
-            lat_out = "neutral"
-
-        if long_cmd == "neutral":
-            long_out = "neutral"
-        elif long_cmd == "forward":
-            long_out = "forward"
-        elif long_cmd == "back":
-            long_out = "back"
+        # if long_cmd == "neutral":
+        #     long_out = "neutral"
+        # elif long_cmd == "forward":
+        #     long_out = "forward"
+        # elif long_cmd == "back":
+        #     long_out = "back"
     else:
         return "N/A", "N/A"
     return lat_out, long_out
