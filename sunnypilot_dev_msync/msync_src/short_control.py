@@ -15,6 +15,8 @@ class Decider:
     list for backward familiarity, but the two axes no longer overwrite each other.
     """
 
+    LOCKOUT_SPEED = 2.5
+
     # Original combined enumerations (kept for continuity of string labels)
     NEUTRAL = 0
     FORWARD = 1
@@ -139,12 +141,15 @@ class Decider:
         Uses sticky values when current state is not neutral, smooth values when neutral.
         Returns committed state (int).
         """
+        lockout = False
         if domain == 'lat':
             history = self._lat_history
             current_state = self.lat_state
             # Use sticky value if current state is not neutral, otherwise use smooth
             required = self.lat_sticky if current_state != self.NEUTRAL else self.lat_smooth
             state_attr = 'lat_state'
+            if self.vel < self.LOCKOUT_SPEED:
+                lockout = True
         else:
             history = self._long_history
             current_state = self.long_state
@@ -162,6 +167,8 @@ class Decider:
         # Check if we have enough history and all entries match
         if len(history) >= required and all(h == new_decision for h in list(history)[-required:]):
             setattr(self, state_attr, new_decision)
+        if lockout:
+            return self.NEUTRAL
         return getattr(self, state_attr)
 
     # ----------------------- Lateral decision logic -----------------------
@@ -186,7 +193,7 @@ class Decider:
         mild_left = minY < -self.turn_thr1
 
         # Blinker-velocity override logic: prevent opposite direction signals at low speed
-        if self.vel < 2.0:  # velocity below 2 m/s
+        if self.vel < self.LOCKOUT_SPEED:  # velocity below 2.5 m/s
             if self.lft_blnk:
                 # Left blinker active but curve wants to go right - block right signals
                 hard_right = False
