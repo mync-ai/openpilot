@@ -121,4 +121,3 @@ if __name__ == "__main__":
     # parse_messages(interesting_subs, latency, verbose=True)
     for control_response in execute_control(decider, sm, interesting_subs, latency):
         print(f"Lateral: {control_response[0]} | Longitudinal: {control_response[1]}        ", end='\r')
-

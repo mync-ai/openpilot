@@ -171,6 +171,9 @@ class Decider:
 
         Predictive lateral is allowed even while stopped (per requirement) so we
         do NOT early-return when self.stopped is True.
+
+        Added blinker-velocity logic: When velocity < 2 m/s and a blinker is active,
+        prevent signals in the opposite direction to the blinker.
         """
         if not self.accelY_pred:
             return self.NEUTRAL
@@ -181,6 +184,17 @@ class Decider:
         hard_left = minY < -self.turn_thr2
         mild_right = maxY > self.turn_thr1
         mild_left = minY < -self.turn_thr1
+
+        # Blinker-velocity override logic: prevent opposite direction signals at low speed
+        if self.vel < 2.0:  # velocity below 2 m/s
+            if self.lft_blnk:
+                # Left blinker active but curve wants to go right - block right signals
+                hard_right = False
+                mild_right = False
+            elif self.rght_blnk:
+                # Right blinker active but curve wants to go left - block left signals
+                hard_left = False
+                mild_left = False
 
         # Conflict (simultaneous indications). Use 1s average to disambiguate.
         if (hard_right and hard_left) or (mild_right and mild_left):
