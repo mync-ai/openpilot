@@ -1,0 +1,6 @@
+scons -j$(nproc)
+tools/replay/replay --demo -b seatControl,seatControlConfig,seatControlConfigRequest
+source .venv/bin/activate
+selfdrive/ui/ui
+python sunnypilot_dev_msync/msync_src/seat_control_service_enhanced.py
+python sunnypilot_dev_msync/msync_src/seat_control_cli.py

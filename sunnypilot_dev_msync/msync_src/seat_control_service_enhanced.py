@@ -213,16 +213,16 @@ def run_service_enhanced(**kwargs):
 def main():
     parser = argparse.ArgumentParser(description='Enhanced Seat Control Service (file-based config)')
     parser.add_argument('--frequency', type=int, default=20, help='Update frequency in Hz')
-    parser.add_argument('--turn-thresh-1', type=float, default=1.0, help='First turn threshold')
+    parser.add_argument('--turn-thresh-1', type=float, default=0.8, help='First turn threshold')
     parser.add_argument('--turn-thresh-2', type=float, default=2.0, help='Second turn threshold')
-    parser.add_argument('--accel-thresh', type=float, default=1.0, help='Acceleration threshold')
-    parser.add_argument('--decel-thresh', type=float, default=1.0, help='Deceleration threshold')
-    parser.add_argument('--long-sens', type=int, default=5, help='Longitudinal sensitivity window')
-    parser.add_argument('--lat-sens', type=int, default=5, help='Lateral sensitivity window')
-    parser.add_argument('--long-sticky', type=int, default=3, help='Longitudinal sticky window')
+    parser.add_argument('--accel-thresh', type=float, default=1.25, help='Acceleration threshold')
+    parser.add_argument('--decel-thresh', type=float, default=1.25, help='Deceleration threshold')
+    parser.add_argument('--long-sens', type=int, default=10, help='Longitudinal sensitivity window')
+    parser.add_argument('--lat-sens', type=int, default=6, help='Lateral sensitivity window')
+    parser.add_argument('--long-sticky', type=int, default=10, help='Longitudinal sticky window')
     parser.add_argument('--lat-sticky', type=int, default=3, help='Lateral sticky window')
     parser.add_argument('--horizon', type=float, default=3.0, help='Time horizon for predictions in seconds')
-    parser.add_argument('--use-plan', action='store_true', default=True,
+    parser.add_argument('--use-plan', action='store_true', default=False,
                        help='Use plan data instead of prediction data for longitudinal decisions')
     parser.add_argument('--use-stored-config', action='store_true', default=False,
                        help='Use stored configuration instead of command line arguments')
