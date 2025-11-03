@@ -28,7 +28,8 @@ from sunnypilot_dev_msync.msync_src.parameter_manager import SeatControlParamete
 
 PARAM_DISPLAY_ORDER = [
     'frequency', 'turn_thresh_1', 'turn_thresh_2', 'accel_thresh', 'decel_thresh',
-    'long_sens', 'lat_sens', 'long_sticky', 'lat_sticky', 'horizon', 'use_plan'
+    'long_sens', 'lat_sens', 'long_sticky', 'lat_sticky', 'horizon', 'horizon_offset',
+    'use_plan', 'lockout_speed'
 ]
 
 COLOR_OK = '\033[92m'
@@ -118,7 +119,9 @@ Parameters:
   long_sticky (int 1-20)
   lat_sticky (int 1-20)
   horizon (float 0.5-10.0)
+  horizon_offset (float 0.0-9.0)
   use_plan (bool true/false)
+  lockout_speed (float 0.0-20.0)
 """)
         continue
       if cmd.lower().startswith('set '):

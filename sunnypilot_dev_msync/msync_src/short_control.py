@@ -14,9 +14,7 @@ class Decider:
     Commands are still expressed as strings from the original combined command
     list for backward familiarity, but the two axes no longer overwrite each other.
     """
-
-    LOCKOUT_SPEED = 2.5
-
+    BLINK_LOCK = 2.5  # m/s - speed below which anti-blinker roll lockout is enforced
     # Original combined enumerations (kept for continuity of string labels)
     NEUTRAL = 0
     FORWARD = 1
@@ -37,7 +35,8 @@ class Decider:
                  accel_thresh=1.0, decel_thresh=1.0,
                  long_sens=5, lat_sens=5,
                  long_sticky=3, lat_sticky=3,
-                 horizon=3.0, use_plan=True):
+                 horizon=3.0, horizon_offset=0.0,
+                 use_plan=True, lockout_speed=2.5):
         # Prediction buffers
         self.accelX_pred = []
         self.accelY_pred = []
@@ -55,6 +54,8 @@ class Decider:
 
         # Thresholds / parameters
         self.use_plan = use_plan
+        self.horizon_offset = horizon_offset
+        self.lockout_speed = lockout_speed
         self.turn_thr1 = turn_thresh_1
         self.turn_thr2 = turn_thresh_2
         self.accel_thr = accel_thresh
@@ -77,56 +78,85 @@ class Decider:
         self._lat_history = deque()   # No maxlen - we'll manage size dynamically
 
         # Compute horizon-limited indices once (depends on horizon)
-        self.ind_pred = self._compute_horizon_indices(self.PRED_TIME)
-        self.ind_plan = self._compute_horizon_indices(self.PLAN_TIME)
+        self.pred_window = self._compute_horizon_window(self.PRED_TIME)
+        self.plan_window = self._compute_horizon_window(self.PLAN_TIME)
 
-    def _compute_horizon_indices(self, time_vec):
-        """Return index of first element whose time exceeds horizon, else len(time_vec)."""
-        return next((i for i, t in enumerate(time_vec) if t > self.horizon), len(time_vec))
+    def _compute_horizon_window(self, time_vec):
+        """Return (start_idx, end_idx) covering [offset, offset + horizon] within time_vec."""
+        start_time = self.horizon_offset
+        end_time = self.horizon_offset + self.horizon
+        start_idx = next((i for i, t in enumerate(time_vec) if t >= start_time), len(time_vec))
+        end_idx = next((i for i, t in enumerate(time_vec) if t > end_time), len(time_vec))
+        return (start_idx, end_idx)
+
+    @staticmethod
+    def _extract_series(series, start_idx, end_idx):
+        end_idx = min(end_idx, len(series))
+        start_idx = min(start_idx, end_idx)
+        return [series[i] for i in range(start_idx, end_idx)]
 
     def set_data(self, new_data):
-            """Ingest latest model outputs & ego state.
+        """Ingest latest model outputs & ego state."""
+        pred_start, pred_end = self.pred_window
+        plan_start, plan_end = self.plan_window
 
-            Expected new_data keys:
-                acceleration_pred (with .x / .y sequences)
-                velocity_pred (with .x / .y sequences)
-                acceleration_plan / velocity_plan (optional, if use_plan)
-                left_blinker, right_blinker, vEgo, aEgo
-            """
-            self.accelX_pred = [new_data['acceleration_pred'].x[i] for i in range(min(self.ind_pred, len(new_data['acceleration_pred'].x)))]
-            self.accelY_pred = [new_data['acceleration_pred'].y[i] for i in range(min(self.ind_pred, len(new_data['acceleration_pred'].y)))]
-            self.velX_pred = [new_data['velocity_pred'].x[i] for i in range(min(self.ind_pred, len(new_data['velocity_pred'].x)))]
-            self.velY_pred = [new_data['velocity_pred'].y[i] for i in range(min(self.ind_pred, len(new_data['velocity_pred'].y)))]
+        accel_pred = new_data['acceleration_pred']
+        vel_pred = new_data['velocity_pred']
 
-            if self.use_plan:
-                    self.accelX_plan = [new_data['acceleration_plan'].x[i] for i in range(min(self.ind_plan, len(new_data['acceleration_plan'].x)))]
-                    self.velX_plan = [new_data['velocity_plan'].x[i] for i in range(min(self.ind_plan, len(new_data['velocity_plan'].x)))]
-                    self._extend_plan(new_data)
+        self.accelX_pred = self._extract_series(accel_pred.x, pred_start, pred_end)
+        self.accelY_pred = self._extract_series(accel_pred.y, pred_start, pred_end)
+        self.velX_pred = self._extract_series(vel_pred.x, pred_start, pred_end)
+        self.velY_pred = self._extract_series(vel_pred.y, pred_start, pred_end)
 
-            self.lft_blnk = new_data['left_blinker']
-            self.rght_blnk = new_data['right_blinker']
-            self.vel = float(new_data['vEgo'])
-            self.accel = float(new_data['aEgo'])
-            self.gear = new_data['gear_shifter']
-            self.stopped = self.vel <= 0.05  # ~0.18 km/h threshold
-            # Update kinetime slice for lateral conflict resolution (limit to horizon)
-            self.kinetime = self.PRED_TIME[:self.ind_pred]
+        if self.use_plan and new_data.get('acceleration_plan') is not None and new_data.get('velocity_plan') is not None:
+            accel_plan = new_data['acceleration_plan']
+            vel_plan = new_data['velocity_plan']
+            self.accelX_plan = self._extract_series(accel_plan.x, plan_start, plan_end)
+            self.velX_plan = self._extract_series(vel_plan.x, plan_start, plan_end)
+            self._extend_plan(new_data)
+        else:
+            self.accelX_plan = []
+            self.velX_plan = []
+
+        self.lft_blnk = new_data['left_blinker']
+        self.rght_blnk = new_data['right_blinker']
+        self.vel = float(new_data['vEgo'])
+        self.accel = float(new_data['aEgo'])
+        self.gear = new_data['gear_shifter']
+        self.stopped = self.vel <= 0.05  # ~0.18 km/h threshold
+        # Update kinetime slice for lateral conflict resolution (limit to horizon)
+        self.kinetime = self.PRED_TIME[pred_start:min(pred_end, len(self.PRED_TIME))]
 
     def _extend_plan(self, new_data):
-        """Extend plan arrays beyond 2.5s with prediction data when horizon > 2.5s."""
-        if self.horizon <= 2.5:
+        """Extend plan arrays with prediction data beyond plan coverage when needed."""
+        window_end = self.horizon_offset + self.horizon
+        plan_limit = self.PLAN_TIME[-1] if self.PLAN_TIME else 0.0
+        if window_end <= plan_limit:
             return
-        additional = self.ind_pred - self.ind_plan
-        if additional > 0:
-            pred_start = self.ind_plan
-            pred_end = min(pred_start + additional, len(new_data['acceleration_pred'].x))
-            # Convert capnp slice to list comprehension (capnp doesn't support slice notation)
-            additional_accelX = [new_data['acceleration_pred'].x[i] for i in range(pred_start, pred_end)]
-            self.accelX_plan.extend(additional_accelX)
 
-            vel_end = min(pred_start + additional, len(new_data['velocity_pred'].x))
-            additional_velX = [new_data['velocity_pred'].x[i] for i in range(pred_start, vel_end)]
-            self.velX_plan.extend(additional_velX)
+        accel_pred = new_data['acceleration_pred']
+        vel_pred = new_data['velocity_pred']
+        pred_start, pred_end = self.pred_window
+        end_idx = min(pred_end, len(accel_pred.x))
+        start_idx = min(pred_start, end_idx)
+        if start_idx >= end_idx:
+            return
+
+        needed_len = end_idx - start_idx
+        additional_needed = needed_len - len(self.accelX_plan)
+        if additional_needed <= 0:
+            return
+
+        append_indices = []
+        for idx in range(start_idx, end_idx):
+            if self.PRED_TIME[idx] > plan_limit:
+                append_indices.append(idx)
+                if len(append_indices) >= additional_needed:
+                    break
+
+        for idx in append_indices:
+            self.accelX_plan.append(accel_pred.x[idx])
+            self.velX_plan.append(vel_pred.x[idx])
 
     # ----------------------- Accessors & helpers -----------------------
 
@@ -148,7 +178,7 @@ class Decider:
             # Use sticky value if current state is not neutral, otherwise use smooth
             required = self.lat_sticky if current_state != self.NEUTRAL else self.lat_smooth
             state_attr = 'lat_state'
-            if self.vel < self.LOCKOUT_SPEED:
+            if self.vel < self.lockout_speed:
                 lockout = True
         else:
             history = self._long_history
@@ -193,7 +223,7 @@ class Decider:
         mild_left = minY < -self.turn_thr1
 
         # Blinker-velocity override logic: prevent opposite direction signals at low speed
-        if self.vel < self.LOCKOUT_SPEED:  # velocity below 2.5 m/s
+        if self.vel < self.BLINK_LOCK:  # velocity below 2.5 m/s
             if self.lft_blnk:
                 # Left blinker active but curve wants to go right - block right signals
                 hard_right = False

@@ -113,8 +113,9 @@ if __name__ == "__main__":
     sm = messaging.SubMaster(subscriptions)
 
     decider = short_control.Decider(
-        turn_thresh_1=1.0, turn_thresh_2=2.5, accel_thresh=2.0, decel_thresh=2.0,
-        long_sens=3, lat_sens=3, long_sticky=3, lat_sticky=3, use_plan=False
+        turn_thresh_1=1.0, turn_thresh_2=2.5, accel_thresh=2.0, decel_thresh=2.0, long_sens=3,
+        lat_sens=3, long_sticky=3, lat_sticky=3, horizon=3.0, horizon_offset=0.0,
+        use_plan=False, lockout_speed=2.5
     )
     # Set verbose=True to see detailed field-by-field output
     # Set verbose=False to use the original compact display format

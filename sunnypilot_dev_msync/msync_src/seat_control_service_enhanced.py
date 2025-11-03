@@ -72,7 +72,9 @@ class EnhancedSeatControlService:
                 long_sticky=self.current_config['long_sticky'],
                 lat_sticky=self.current_config['lat_sticky'],
                 horizon=self.current_config['horizon'],
-                use_plan=self.current_config['use_plan']
+                horizon_offset=self.current_config.get('horizon_offset', 0.0),
+                use_plan=self.current_config['use_plan'],
+                lockout_speed=self.current_config.get('lockout_speed', 2.5)
             )
 
             # Create publisher with current config
@@ -222,32 +224,31 @@ def main():
     parser.add_argument('--long-sticky', type=int, default=10, help='Longitudinal sticky window')
     parser.add_argument('--lat-sticky', type=int, default=3, help='Lateral sticky window')
     parser.add_argument('--horizon', type=float, default=3.0, help='Time horizon for predictions in seconds')
+    parser.add_argument('--horizon-offset', type=float, default=0.0,
+                        help='Offset applied to the start of the decision horizon window in seconds')
     parser.add_argument('--use-plan', action='store_true', default=False,
                        help='Use plan data instead of prediction data for longitudinal decisions')
-    parser.add_argument('--use-stored-config', action='store_true', default=False,
-                       help='Use stored configuration instead of command line arguments')
+    parser.add_argument('--lockout-speed', type=float, default=2.5, help='Lockout speed for roll lockout')
 
     args = parser.parse_args()
 
-    if args.use_stored_config:
-        # Load configuration from stored parameters
-        service = EnhancedSeatControlService()
-    else:
-        # Use command line configuration
-        config = {
-            'frequency': args.frequency,
-            'turn_thresh_1': args.turn_thresh_1,
-            'turn_thresh_2': args.turn_thresh_2,
-            'accel_thresh': args.accel_thresh,
-            'decel_thresh': args.decel_thresh,
-            'long_sens': args.long_sens,
-            'lat_sens': args.lat_sens,
-            'long_sticky': args.long_sticky,
-            'lat_sticky': args.lat_sticky,
-            'horizon': args.horizon,
-            'use_plan': args.use_plan
-        }
-        service = EnhancedSeatControlService(initial_config=config)
+    # Use command line configuration
+    config = {
+        'frequency': args.frequency,
+        'turn_thresh_1': args.turn_thresh_1,
+        'turn_thresh_2': args.turn_thresh_2,
+        'accel_thresh': args.accel_thresh,
+        'decel_thresh': args.decel_thresh,
+        'long_sens': args.long_sens,
+        'lat_sens': args.lat_sens,
+        'long_sticky': args.long_sticky,
+        'lat_sticky': args.lat_sticky,
+        'horizon': args.horizon,
+        'horizon_offset': args.horizon_offset,
+        'use_plan': args.use_plan,
+        'lockout_speed': args.lockout_speed
+    }
+    service = EnhancedSeatControlService(initial_config=config)
 
     service.start()
 
