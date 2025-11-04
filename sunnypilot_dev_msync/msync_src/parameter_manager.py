@@ -23,10 +23,12 @@ class SeatControlParameterManager:
         'lat_sens': 6,
         'long_sticky': 10,
         'lat_sticky': 3,
-        'horizon': 3.0,
+        'long_horizon': 3.0,
+        'lat_horizon': 3.0,
         'use_plan': False,
         'lockout_speed': 2.5,
-        'horizon_offset': 0.0,
+        'long_horizon_offset': 0.0,
+        'lat_horizon_offset': 0.0,
     }
 
     PARAM_RANGES: dict[str, tuple[Any, Any]] = {
@@ -39,10 +41,12 @@ class SeatControlParameterManager:
         'lat_sens': (1, 20),
         'long_sticky': (1, 20),
         'lat_sticky': (1, 20),
-        'horizon': (0.5, 10.0),
+        'long_horizon': (0.5, 10.0),
+        'lat_horizon': (0.5, 10.0),
         'use_plan': (False, True),
         'lockout_speed': (0.0, 20.0),
-        'horizon_offset': (0.0, 9.0),
+        'long_horizon_offset': (0.0, 9.0),
+        'lat_horizon_offset': (0.0, 9.0),
     }
 
     CURRENT_VERSION = 1

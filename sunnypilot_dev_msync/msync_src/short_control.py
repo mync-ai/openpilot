@@ -6,7 +6,8 @@ class Decider:
 
     Step 1 refactor: Lateral (left/right) and longitudinal (forward/back) decisions
     are computed independently and returned together. Each domain has its own
-    temporal smoothing window.
+    temporal smoothing window as well as independent prediction/plan horizons
+    and offsets to accommodate distinct look-ahead requirements.
 
     External API change (staged): short_decision() now returns a tuple:
         (lateral_command: str, longitudinal_command: str)
@@ -35,7 +36,8 @@ class Decider:
                  accel_thresh=1.0, decel_thresh=1.0,
                  long_sens=5, lat_sens=5,
                  long_sticky=3, lat_sticky=3,
-                 horizon=3.0, horizon_offset=0.0,
+                 long_horizon=3.0, long_horizon_offset=0.0,
+                 lat_horizon=3.0, lat_horizon_offset=0.0,
                  use_plan=True, lockout_speed=2.5):
         # Prediction buffers
         self.accelX_pred = []
@@ -54,7 +56,10 @@ class Decider:
 
         # Thresholds / parameters
         self.use_plan = use_plan
-        self.horizon_offset = horizon_offset
+        self.long_horizon = long_horizon
+        self.lat_horizon = lat_horizon
+        self.long_horizon_offset = long_horizon_offset
+        self.lat_horizon_offset = lat_horizon_offset
         self.lockout_speed = lockout_speed
         self.turn_thr1 = turn_thresh_1
         self.turn_thr2 = turn_thresh_2
@@ -64,7 +69,6 @@ class Decider:
         self.lat_smooth = max(1, int(lat_sens))
         self.long_sticky = max(1, int(long_sticky))
         self.lat_sticky = max(1, int(lat_sticky))
-        self.horizon = horizon
 
         # Signals
         self.lft_blnk = 0
@@ -77,14 +81,17 @@ class Decider:
         self._long_history = deque()  # No maxlen - we'll manage size dynamically
         self._lat_history = deque()   # No maxlen - we'll manage size dynamically
 
-        # Compute horizon-limited indices once (depends on horizon)
-        self.pred_window = self._compute_horizon_window(self.PRED_TIME)
-        self.plan_window = self._compute_horizon_window(self.PLAN_TIME)
+        # Compute horizon-limited indices once per domain
+        self.lat_pred_window = self._compute_horizon_window(self.PRED_TIME, self.lat_horizon_offset, self.lat_horizon)
+        self.long_pred_window = self._compute_horizon_window(self.PRED_TIME, self.long_horizon_offset, self.long_horizon)
+        self.long_plan_window = self._compute_horizon_window(self.PLAN_TIME, self.long_horizon_offset, self.long_horizon)
 
-    def _compute_horizon_window(self, time_vec):
+
+    @staticmethod
+    def _compute_horizon_window(time_vec, offset, horizon):
         """Return (start_idx, end_idx) covering [offset, offset + horizon] within time_vec."""
-        start_time = self.horizon_offset
-        end_time = self.horizon_offset + self.horizon
+        start_time = offset
+        end_time = offset + horizon
         start_idx = next((i for i, t in enumerate(time_vec) if t >= start_time), len(time_vec))
         end_idx = next((i for i, t in enumerate(time_vec) if t > end_time), len(time_vec))
         return (start_idx, end_idx)
@@ -97,16 +104,17 @@ class Decider:
 
     def set_data(self, new_data):
         """Ingest latest model outputs & ego state."""
-        pred_start, pred_end = self.pred_window
-        plan_start, plan_end = self.plan_window
+        lat_pred_start, lat_pred_end = self.lat_pred_window
+        long_pred_start, long_pred_end = self.long_pred_window
+        plan_start, plan_end = self.long_plan_window
 
         accel_pred = new_data['acceleration_pred']
         vel_pred = new_data['velocity_pred']
 
-        self.accelX_pred = self._extract_series(accel_pred.x, pred_start, pred_end)
-        self.accelY_pred = self._extract_series(accel_pred.y, pred_start, pred_end)
-        self.velX_pred = self._extract_series(vel_pred.x, pred_start, pred_end)
-        self.velY_pred = self._extract_series(vel_pred.y, pred_start, pred_end)
+        self.accelX_pred = self._extract_series(accel_pred.x, long_pred_start, long_pred_end)
+        self.accelY_pred = self._extract_series(accel_pred.y, lat_pred_start, lat_pred_end)
+        self.velX_pred = self._extract_series(vel_pred.x, long_pred_start, long_pred_end)
+        self.velY_pred = self._extract_series(vel_pred.y, lat_pred_start, lat_pred_end)
 
         if self.use_plan and new_data.get('acceleration_plan') is not None and new_data.get('velocity_plan') is not None:
             accel_plan = new_data['acceleration_plan']
@@ -123,20 +131,20 @@ class Decider:
         self.vel = float(new_data['vEgo'])
         self.accel = float(new_data['aEgo'])
         self.gear = new_data['gear_shifter']
-        self.stopped = self.vel <= 0.05  # ~0.18 km/h threshold
+        self.stopped = self.vel <= 0.1  # ~0.18 km/h threshold
         # Update kinetime slice for lateral conflict resolution (limit to horizon)
-        self.kinetime = self.PRED_TIME[pred_start:min(pred_end, len(self.PRED_TIME))]
+        self.kinetime = self.PRED_TIME[lat_pred_start:min(lat_pred_end, len(self.PRED_TIME))]
 
     def _extend_plan(self, new_data):
         """Extend plan arrays with prediction data beyond plan coverage when needed."""
-        window_end = self.horizon_offset + self.horizon
+        window_end = self.long_horizon_offset + self.long_horizon
         plan_limit = self.PLAN_TIME[-1] if self.PLAN_TIME else 0.0
         if window_end <= plan_limit:
             return
 
         accel_pred = new_data['acceleration_pred']
         vel_pred = new_data['velocity_pred']
-        pred_start, pred_end = self.pred_window
+        pred_start, pred_end = self.long_pred_window
         end_idx = min(pred_end, len(accel_pred.x))
         start_idx = min(pred_start, end_idx)
         if start_idx >= end_idx:

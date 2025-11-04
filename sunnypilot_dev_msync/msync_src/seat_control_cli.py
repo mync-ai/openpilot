@@ -27,9 +27,21 @@ from typing import Any  # Dict deprecated, use built-in generics
 from sunnypilot_dev_msync.msync_src.parameter_manager import SeatControlParameterManager
 
 PARAM_DISPLAY_ORDER = [
-    'frequency', 'turn_thresh_1', 'turn_thresh_2', 'accel_thresh', 'decel_thresh',
-    'long_sens', 'lat_sens', 'long_sticky', 'lat_sticky', 'horizon', 'horizon_offset',
-    'use_plan', 'lockout_speed'
+  'frequency',
+  'turn_thresh_1',
+  'turn_thresh_2',
+  'accel_thresh',
+  'decel_thresh',
+  'long_sens',
+  'lat_sens',
+  'long_sticky',
+  'lat_sticky',
+  'long_horizon',
+  'lat_horizon',
+  'long_horizon_offset',
+  'lat_horizon_offset',
+  'use_plan',
+  'lockout_speed',
 ]
 
 COLOR_OK = '\033[92m'
@@ -118,8 +130,10 @@ Parameters:
   lat_sens (int 1-20)
   long_sticky (int 1-20)
   lat_sticky (int 1-20)
-  horizon (float 0.5-10.0)
-  horizon_offset (float 0.0-9.0)
+  long_horizon (float 0.5-10.0)
+  lat_horizon (float 0.5-10.0)
+  long_horizon_offset (float 0.0-9.0)
+  lat_horizon_offset (float 0.0-9.0)
   use_plan (bool true/false)
   lockout_speed (float 0.0-20.0)
 """)

@@ -71,8 +71,10 @@ class EnhancedSeatControlService:
                 lat_sens=self.current_config['lat_sens'],
                 long_sticky=self.current_config['long_sticky'],
                 lat_sticky=self.current_config['lat_sticky'],
-                horizon=self.current_config['horizon'],
-                horizon_offset=self.current_config.get('horizon_offset', 0.0),
+                long_horizon=self.current_config['long_horizon'],
+                long_horizon_offset=self.current_config['long_horizon_offset'],
+                lat_horizon=self.current_config['lat_horizon'],
+                lat_horizon_offset=self.current_config['lat_horizon_offset'],
                 use_plan=self.current_config['use_plan'],
                 lockout_speed=self.current_config.get('lockout_speed', 2.5)
             )
@@ -223,9 +225,14 @@ def main():
     parser.add_argument('--lat-sens', type=int, default=6, help='Lateral sensitivity window')
     parser.add_argument('--long-sticky', type=int, default=10, help='Longitudinal sticky window')
     parser.add_argument('--lat-sticky', type=int, default=3, help='Lateral sticky window')
-    parser.add_argument('--horizon', type=float, default=3.0, help='Time horizon for predictions in seconds')
-    parser.add_argument('--horizon-offset', type=float, default=0.0,
-                        help='Offset applied to the start of the decision horizon window in seconds')
+    parser.add_argument('--long-horizon', type=float, default=3.0,
+                        help='Override time horizon for longitudinal decisions (defaults to --horizon)')
+    parser.add_argument('--long-horizon-offset', type=float, default=0.0,
+                        help='Override horizon offset for longitudinal decisions (defaults to --horizon-offset)')
+    parser.add_argument('--lat-horizon', type=float, default=3.0,
+                        help='Override time horizon for lateral decisions (defaults to --horizon)')
+    parser.add_argument('--lat-horizon-offset', type=float, default=0.0,
+                        help='Override horizon offset for lateral decisions (defaults to --horizon-offset)')
     parser.add_argument('--use-plan', action='store_true', default=False,
                        help='Use plan data instead of prediction data for longitudinal decisions')
     parser.add_argument('--lockout-speed', type=float, default=2.5, help='Lockout speed for roll lockout')
@@ -243,8 +250,10 @@ def main():
         'lat_sens': args.lat_sens,
         'long_sticky': args.long_sticky,
         'lat_sticky': args.lat_sticky,
-        'horizon': args.horizon,
-        'horizon_offset': args.horizon_offset,
+        'long_horizon': args.long_horizon,
+        'long_horizon_offset': args.long_horizon_offset,
+        'lat_horizon': args.lat_horizon,
+        'lat_horizon_offset': args.lat_horizon_offset,
         'use_plan': args.use_plan,
         'lockout_speed': args.lockout_speed
     }
