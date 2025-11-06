@@ -25,6 +25,23 @@ echo "✓ Confirmed we're in the openpilot directory"
 echo "Current directory: $(pwd)"
 echo ""
 
+# Check if virtual environment exists
+if [[ ! -d ".venv" ]]; then
+    error_exit "Virtual environment not found. Please ensure .venv directory exists."
+fi
+
+# Activate virtual environment
+echo "🔧 Activating virtual environment..."
+source .venv/bin/activate
+
+# Check if activation was successful
+if [[ -z "$VIRTUAL_ENV" ]]; then
+    error_exit "Failed to activate virtual environment"
+fi
+
+echo "✓ Virtual environment activated: $VIRTUAL_ENV"
+echo ""
+
 # Build openpilot
 echo "🔨 Building openpilot with scons..."
 echo "Command: scons -j$(nproc)"
