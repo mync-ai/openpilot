@@ -1,7 +1,8 @@
 from openpilot.selfdrive.telemetryd.sub_fields import *
 import sys
 
-cmd_telemetry = {'forward':'A', 'back':'B', 'mildLeft':'l', 'mildRight':'r', 'hardLeft':'L', 'hardRight':'R', 'neutral':'N'}
+cmd_telemetry = {'mildForward':'a', 'mildBack':'b', 'hardForward':'A', 'hardBack':'B', 'mildLeft':'l',
+                 'mildRight':'r', 'hardLeft':'L', 'hardRight':'R', 'neutral':'N'}
 subscriptions = ['carState', 'controlsState', 'modelV2', 'longitudinalPlan', 'seatControl', 'gpsLocation']
 # SubMaster subscribes to selected message types
 sub_gps = messaging.SubMaster(subscriptions)
