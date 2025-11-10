@@ -187,8 +187,7 @@ class Decider:
         if reference == self.NEUTRAL or candidate == self.NEUTRAL:
             return False
         if domain == 'lat':
-            return ((reference in self.LAT_LEFT_STATES and candidate in self.LAT_LEFT_STATES) or
-                    (reference in self.LAT_RIGHT_STATES and candidate in self.LAT_RIGHT_STATES))
+            return False
         return ((reference in self.LONG_FORWARD_STATES and candidate in self.LONG_FORWARD_STATES) or
                 (reference in self.LONG_BACK_STATES and candidate in self.LONG_BACK_STATES))
 
