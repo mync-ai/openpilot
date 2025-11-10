@@ -125,8 +125,10 @@ class HudRenderer(Widget):
         # Map Cap'n Proto enum strings to display strings
         command_mapping = {
           'neutral': "NEUTRAL",
-          'forward': "FORWARD",
-          'back': "BACK",
+          'forward': "MILD_FORWARD",
+          'back': "MILD_BACK",
+          'hardForward': "HARD_FORWARD",
+          'hardBack': "HARD_BACK",
           'mildLeft': "MILD_LEFT",
           'mildRight': "MILD_RIGHT",
           'hardLeft': "HARD_LEFT",
@@ -270,10 +272,14 @@ class HudRenderer(Widget):
       command_color = COLORS.engaged
     elif command_text in ["HARD_LEFT", "HARD_RIGHT"]:
       command_color = rl.Color(255, 165, 0, 255)  # Orange
-    elif command_text == "FORWARD":
-      command_color = rl.Color(0, 255, 0, 255)    # Green
-    elif command_text == "BACK":
-      command_color = rl.Color(255, 0, 0, 255)    # Red
+    elif command_text == "MILD_FORWARD":
+      command_color = rl.Color(0, 255, 0, 255)    # a3ffac
+    elif command_text == "MILD_BACK":
+      command_color = rl.Color(255, 162, 57, 255)    # ff6b55
+    elif command_text == "HARD_FORWARD":
+      command_color = rl.Color(0, 160, 16, 255)    # 00a010
+    elif command_text == "HARD_BACK":
+      command_color = rl.Color(225, 30, 0, 255)    # e11e00
 
     rl.draw_text_ex(self._font_bold, command_text, command_pos, 38, 0, command_color)
 

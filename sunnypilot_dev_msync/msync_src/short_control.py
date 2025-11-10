@@ -18,22 +18,29 @@ class Decider:
     BLINK_LOCK = 2.5  # m/s - speed below which anti-blinker roll lockout is enforced
     # Original combined enumerations (kept for continuity of string labels)
     NEUTRAL = 0
-    FORWARD = 1
-    BACK = 2
-    MILD_LEFT = 3
-    MILD_RIGHT = 4
-    HARD_LEFT = 5
-    HARD_RIGHT = 6
+    MILD_FORWARD = 1
+    MILD_BACK = 2
+    HARD_FORWARD = 3
+    HARD_BACK = 4
+    MILD_LEFT = 5
+    MILD_RIGHT = 6
+    HARD_LEFT = 7
+    HARD_RIGHT = 8
 
+    LONG_FORWARD_STATES = {MILD_FORWARD, HARD_FORWARD}
+    LONG_BACK_STATES = {MILD_BACK, HARD_BACK}
+    LAT_LEFT_STATES = {MILD_LEFT, HARD_LEFT}
+    LAT_RIGHT_STATES = {MILD_RIGHT, HARD_RIGHT}
     # Time vectors (comma.ai formatted) - prediction horizon & plan horizon
     PLAN_TIME = [0.0, 0.156, 0.312, 0.468, 0.625, 0.781, 0.937, 1.093, 1.25, 1.406, 1.562, 1.718, 1.875, 2.031, 2.187, 2.343, 2.5]
     PRED_TIME = [0, 0.009, 0.039, 0.087, 0.156, 0.244, 0.351, 0.478, 0.625, 0.791, 0.976, 1.181, 1.406, 1.650, 1.914, 2.197, 2.5,
                  2.822, 3.164, 3.525, 3.906, 4.306, 4.726, 5.166, 5.625, 6.103, 6.601, 7.119, 7.656, 8.212, 8.789, 9.384, 10]
 
-    commands = ['NEUTRAL', 'FORWARD', 'BACK', 'MILD_LEFT', 'MILD_RIGHT', 'HARD_LEFT', 'HARD_RIGHT']
+    commands = ['NEUTRAL', 'MILD_FORWARD', 'MILD_BACK', 'HARD_FORWARD', 'HARD_BACK', 'MILD_LEFT', 'MILD_RIGHT', 'HARD_LEFT', 'HARD_RIGHT']
 
     def __init__(self, *, turn_thresh_1=1.0, turn_thresh_2=2.0,
-                 accel_thresh=1.0, decel_thresh=1.0,
+                 accel_thresh_1=1.0, accel_thresh_2=2.0,
+                 decel_thresh_1=1.0, decel_thresh_2=2.0,
                  long_sens=5, lat_sens=5,
                  long_sticky=3, lat_sticky=3,
                  long_horizon=3.0, long_horizon_offset=0.0,
@@ -63,8 +70,10 @@ class Decider:
         self.lockout_speed = lockout_speed
         self.turn_thr1 = turn_thresh_1
         self.turn_thr2 = turn_thresh_2
-        self.accel_thr = accel_thresh
-        self.decel_thr = decel_thresh
+        self.accel_thr1 = accel_thresh_1
+        self.accel_thr2 = accel_thresh_2
+        self.decel_thr1 = decel_thresh_1
+        self.decel_thr2 = decel_thresh_2
         self.long_smooth = max(1, int(long_sens))
         self.lat_smooth = max(1, int(lat_sens))
         self.long_sticky = max(1, int(long_sticky))
@@ -172,6 +181,17 @@ class Decider:
         """Return (accelX, velX) either from plan (if enabled) or prediction."""
         return (self.accelX_plan, self.velX_plan) if self.use_plan else (self.accelX_pred, self.velX_pred)
 
+    def _directions_match(self, domain, reference, candidate):
+        if reference == candidate:
+            return True
+        if reference == self.NEUTRAL or candidate == self.NEUTRAL:
+            return False
+        if domain == 'lat':
+            return ((reference in self.LAT_LEFT_STATES and candidate in self.LAT_LEFT_STATES) or
+                    (reference in self.LAT_RIGHT_STATES and candidate in self.LAT_RIGHT_STATES))
+        return ((reference in self.LONG_FORWARD_STATES and candidate in self.LONG_FORWARD_STATES) or
+                (reference in self.LONG_BACK_STATES and candidate in self.LONG_BACK_STATES))
+
     def _smooth_update(self, domain, new_decision):
         """Update smoothing history for a domain ('lat' or 'long').
 
@@ -203,8 +223,13 @@ class Decider:
             history.popleft()
 
         # Check if we have enough history and all entries match
-        if len(history) >= required and all(h == new_decision for h in list(history)[-required:]):
-            setattr(self, state_attr, new_decision)
+        if len(history) >= required:
+            window = list(history)[-required:]
+            if current_state == self.NEUTRAL:
+                if all(self._directions_match(domain, new_decision, h) for h in window):
+                    setattr(self, state_attr, new_decision)
+            elif all(h == new_decision for h in window):
+                setattr(self, state_attr, new_decision)
         if lockout:
             return self.NEUTRAL
         return getattr(self, state_attr)
@@ -309,21 +334,27 @@ class Decider:
     # ----------------------- Longitudinal decision logic -----------------------
 
     def stop(self):
-        """Return BACK if deceleration exceeds threshold."""
+        """Return mild or hard BACK based on deceleration severity."""
         accelX, _ = self.get_x_vectors()
         if not accelX:
             return self.NEUTRAL
-        if min(accelX) < -self.decel_thr:
-            return self.BACK
+        min_ax = min(accelX)
+        if min_ax < -self.decel_thr2:
+            return self.HARD_BACK
+        if min_ax < -self.decel_thr1:
+            return self.MILD_BACK
         return self.NEUTRAL
 
     def accelerate(self):
-        """Return FORWARD if forward accel exceeds threshold."""
+        """Return mild or hard FORWARD based on acceleration severity."""
         accelX, _ = self.get_x_vectors()
         if not accelX:
             return self.NEUTRAL
-        if max(accelX) > self.accel_thr:
-            return self.FORWARD
+        max_ax = max(accelX)
+        if max_ax > self.accel_thr2:
+            return self.HARD_FORWARD
+        if max_ax > self.accel_thr1:
+            return self.MILD_FORWARD
         return self.NEUTRAL
 
     def _longitudinal_decision_raw(self):
@@ -332,10 +363,14 @@ class Decider:
         dec = self.stop()
         if self.gear != 'drive':
             return self.NEUTRAL
-        if dec == self.BACK:
-            return self.BACK
-        if acc == self.FORWARD:
-            return self.FORWARD
+
+        # Braking commands take priority over acceleration commands
+        if dec in (self.HARD_BACK, self.MILD_BACK):
+            return dec
+
+        if acc in (self.HARD_FORWARD, self.MILD_FORWARD):
+            return acc
+
         return self.NEUTRAL
 
     def short_decision(self):

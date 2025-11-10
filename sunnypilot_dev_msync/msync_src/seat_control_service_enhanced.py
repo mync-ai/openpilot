@@ -65,8 +65,10 @@ class EnhancedSeatControlService:
             self.decider = short_control.Decider(
                 turn_thresh_1=self.current_config['turn_thresh_1'],
                 turn_thresh_2=self.current_config['turn_thresh_2'],
-                accel_thresh=self.current_config['accel_thresh'],
-                decel_thresh=self.current_config['decel_thresh'],
+                accel_thresh_1=self.current_config['accel_thresh_1'],
+                accel_thresh_2=self.current_config['accel_thresh_2'],
+                decel_thresh_1=self.current_config['decel_thresh_1'],
+                decel_thresh_2=self.current_config['decel_thresh_2'],
                 long_sens=self.current_config['long_sens'],
                 lat_sens=self.current_config['lat_sens'],
                 long_sticky=self.current_config['long_sticky'],
@@ -219,8 +221,10 @@ def main():
     parser.add_argument('--frequency', type=int, default=20, help='Update frequency in Hz')
     parser.add_argument('--turn-thresh-1', type=float, default=0.8, help='First turn threshold')
     parser.add_argument('--turn-thresh-2', type=float, default=2.0, help='Second turn threshold')
-    parser.add_argument('--accel-thresh', type=float, default=1.25, help='Acceleration threshold')
-    parser.add_argument('--decel-thresh', type=float, default=1.25, help='Deceleration threshold')
+    parser.add_argument('--accel-thresh-1', type=float, default=1.75, help='First acceleration threshold')
+    parser.add_argument('--accel-thresh-2', type=float, default=2.5, help='Second acceleration threshold')
+    parser.add_argument('--decel-thresh-1', type=float, default=1.2, help='First deceleration threshold')
+    parser.add_argument('--decel-thresh-2', type=float, default=2.0, help='Second deceleration threshold')
     parser.add_argument('--long-sens', type=int, default=10, help='Longitudinal sensitivity window')
     parser.add_argument('--lat-sens', type=int, default=6, help='Lateral sensitivity window')
     parser.add_argument('--long-sticky', type=int, default=10, help='Longitudinal sticky window')
@@ -244,8 +248,10 @@ def main():
         'frequency': args.frequency,
         'turn_thresh_1': args.turn_thresh_1,
         'turn_thresh_2': args.turn_thresh_2,
-        'accel_thresh': args.accel_thresh,
-        'decel_thresh': args.decel_thresh,
+        'accel_thresh_1': args.accel_thresh_1,
+        'accel_thresh_2': args.accel_thresh_2,
+        'decel_thresh_1': args.decel_thresh_1,
+        'decel_thresh_2': args.decel_thresh_2,
         'long_sens': args.long_sens,
         'lat_sens': args.lat_sens,
         'long_sticky': args.long_sticky,

@@ -242,12 +242,14 @@ struct SeatControl @0xa1680744031fdb2d {
 
   enum SeatControlCommand {
     neutral @0;
-    forward @1;
-    back @2;
-    mildLeft @3;
-    mildRight @4;
-    hardLeft @5;
-    hardRight @6;
+    mildForward @1;
+    mildBack @2;
+    hardForward @3;
+    hardBack @4;
+    mildLeft @5;
+    mildRight @6;
+    hardLeft @7;
+    hardRight @8;
   }
 }
 

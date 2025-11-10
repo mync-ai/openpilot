@@ -103,33 +103,33 @@ def execute_control(decider, submaster, interesting_subs=['modelV2', 'carState']
         time.sleep(latency)
 
 
-if __name__ == "__main__":
-    latency = 0.05  # seconds, change as needed
+# if __name__ == "__main__":
+#     latency = 0.05  # seconds, change as needed
 
-    # Parsing options: 'modelV2', 'longitudinalPlan', 'radarState', 'carControl', 'carState'
-    interesting_subs = ['modelV2', 'carState']
-    subscriptions = ['carState', 'carControl', 'modelV2', 'longitudinalPlan', 'radarState']
-    # SubMaster subscribes to selected message types
-    sm = messaging.SubMaster(subscriptions)
+#     # Parsing options: 'modelV2', 'longitudinalPlan', 'radarState', 'carControl', 'carState'
+#     interesting_subs = ['modelV2', 'carState']
+#     subscriptions = ['carState', 'carControl', 'modelV2', 'longitudinalPlan', 'radarState']
+#     # SubMaster subscribes to selected message types
+#     sm = messaging.SubMaster(subscriptions)
 
-    decider = short_control.Decider(
-        turn_thresh_1=1.0,
-        turn_thresh_2=2.5,
-        accel_thresh=2.0,
-        decel_thresh=2.0,
-        long_sens=3,
-        lat_sens=3,
-        long_sticky=3,
-        lat_sticky=3,
-        long_horizon=3,
-        long_horizon_offset=3,
-        lat_horizon=3,
-        lat_horizon_offset=3,
-        use_plan=False,
-        lockout_speed=2.5,
-    )
-    # Set verbose=True to see detailed field-by-field output
-    # Set verbose=False to use the original compact display format
-    # parse_messages(interesting_subs, latency, verbose=True)
-    for control_response in execute_control(decider, sm, interesting_subs, latency):
-        print(f"Lateral: {control_response[0]} | Longitudinal: {control_response[1]}        ", end='\r')
+#     decider = short_control.Decider(
+#         turn_thresh_1=1.0,
+#         turn_thresh_2=2.5,
+#         accel_thresh=2.0,
+#         decel_thresh=2.0,
+#         long_sens=3,
+#         lat_sens=3,
+#         long_sticky=3,
+#         lat_sticky=3,
+#         long_horizon=3,
+#         long_horizon_offset=3,
+#         lat_horizon=3,
+#         lat_horizon_offset=3,
+#         use_plan=False,
+#         lockout_speed=2.5,
+#     )
+#     # Set verbose=True to see detailed field-by-field output
+#     # Set verbose=False to use the original compact display format
+#     # parse_messages(interesting_subs, latency, verbose=True)
+#     for control_response in execute_control(decider, sm, interesting_subs, latency):
+#         print(f"Lateral: {control_response[0]} | Longitudinal: {control_response[1]}        ", end='\r')

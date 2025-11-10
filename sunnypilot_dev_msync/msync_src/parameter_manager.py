@@ -17,8 +17,10 @@ class SeatControlParameterManager:
         'frequency': 20,
         'turn_thresh_1': 0.8,
         'turn_thresh_2': 2.0,
-        'accel_thresh': 1.25,
-        'decel_thresh': 1.25,
+        'accel_thresh_1': 1.75,
+        'accel_thresh_2': 2.5,
+        'decel_thresh_1': 1.2,
+        'decel_thresh_2': 2.0,
         'long_sens': 10,
         'lat_sens': 6,
         'long_sticky': 10,
@@ -35,8 +37,10 @@ class SeatControlParameterManager:
         'frequency': (1, 100),
         'turn_thresh_1': (0.1, 10.0),
         'turn_thresh_2': (0.1, 15.0),
-        'accel_thresh': (0.1, 10.0),
-        'decel_thresh': (0.1, 10.0),
+        'accel_thresh_1': (0.1, 10.0),
+        'accel_thresh_2': (0.1, 15.0),
+        'decel_thresh_1': (0.1, 10.0),
+        'decel_thresh_2': (0.1, 15.0),
         'long_sens': (1, 20),
         'lat_sens': (1, 20),
         'long_sticky': (1, 20),
@@ -107,6 +111,10 @@ class SeatControlParameterManager:
                     return False, f"Parameter {name} must be between {lo} and {hi}"
         if 'turn_thresh_1' in config and 'turn_thresh_2' in config and config['turn_thresh_1'] > config['turn_thresh_2']:
             return False, 'turn_thresh_1 must be <= turn_thresh_2'
+        if 'accel_thresh_1' in config and 'accel_thresh_2' in config and config['accel_thresh_1'] > config['accel_thresh_2']:
+            return False, 'accel_thresh_1 must be <= accel_thresh_2'
+        if 'decel_thresh_1' in config and 'decel_thresh_2' in config and config['decel_thresh_1'] > config['decel_thresh_2']:
+            return False, 'decel_thresh_1 must be <= decel_thresh_2'
         return True, ''
 
     def get_current_config(self) -> dict[str, Any]:

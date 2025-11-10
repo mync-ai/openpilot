@@ -26,8 +26,10 @@ class SeatControlPublisher:
         # Command mapping from string to enum
         self.command_map = {
             'NEUTRAL': 'neutral',
-            'FORWARD': 'forward',
-            'BACK': 'back',
+            'MILD_FORWARD': 'mildForward',
+            'MILD_BACK': 'mildBack',
+            'HARD_FORWARD': 'hardForward',
+            'HARD_BACK': 'hardBack',
             'MILD_LEFT': 'mildLeft',
             'MILD_RIGHT': 'mildRight',
             'HARD_LEFT': 'hardLeft',

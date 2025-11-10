@@ -30,8 +30,10 @@ PARAM_DISPLAY_ORDER = [
   'frequency',
   'turn_thresh_1',
   'turn_thresh_2',
-  'accel_thresh',
-  'decel_thresh',
+  'accel_thresh_1',
+  'accel_thresh_2',
+  'decel_thresh_1',
+  'decel_thresh_2',
   'long_sens',
   'lat_sens',
   'long_sticky',
@@ -53,14 +55,12 @@ COLOR_RESET = '\033[0m'
 def load_config(pm: SeatControlParameterManager) -> dict[str, Any]:
   return pm.get_current_config()
 
-
 def print_config(config: dict[str, Any], header: str = "Current Seat Control Configuration"):
   print(f"\n{header}:")
   for k in PARAM_DISPLAY_ORDER:
     if k in config:
       print(f"  {k:16s}: {config[k]}")
   print()
-
 
 def parse_set_args(pairs: list[str]) -> dict[str, Any]:
   parsed: dict[str, Any] = {}
@@ -83,7 +83,6 @@ def parse_set_args(pairs: list[str]) -> dict[str, Any]:
     parsed[k] = v_conv
   return parsed
 
-
 def apply_updates(pm: SeatControlParameterManager, updates: dict[str, Any]) -> bool:
   current = pm.get_current_config()
   merged = current.copy()
@@ -98,7 +97,6 @@ def apply_updates(pm: SeatControlParameterManager, updates: dict[str, Any]) -> b
     return False
   print(f"{COLOR_OK}Configuration updated successfully.{COLOR_RESET}")
   return True
-
 
 def interactive_loop(pm: SeatControlParameterManager):
   print("Entering interactive mode. Type 'help' for commands, 'quit' to exit.")
@@ -124,8 +122,10 @@ Parameters:
   frequency (int 1-100)
   turn_thresh_1 (float 0.1-10.0)
   turn_thresh_2 (float 0.1-15.0)
-  accel_thresh (float 0.1-10.0)
-  decel_thresh (float 0.1-10.0)
+  accel_thresh_1 (float 0.1-10.0)
+  accel_thresh_2 (float 0.1-15.0)
+  decel_thresh_1 (float 0.1-10.0)
+  decel_thresh_2 (float 0.1-15.0)
   long_sens (int 1-20)
   lat_sens (int 1-20)
   long_sticky (int 1-20)

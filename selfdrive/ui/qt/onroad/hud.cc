@@ -82,21 +82,27 @@ void HudRenderer::updateSeatControlState(const SubMaster &sm) {
         lateral_str = "NEUTRAL";
         break;
       case 1: // forward
-        lateral_str = "FORWARD";
+        lateral_str = "MILD_FORWARD";
         break;
       case 2: // back
-        lateral_str = "BACK";
+        lateral_str = "MILD_BACK";
         break;
-      case 3: // mildLeft
+      case 3: // forward
+        lateral_str = "HARD_FORWARD";
+        break;
+      case 4: // back
+        lateral_str = "HARD_BACK";
+        break;
+      case 5: // mildLeft
         lateral_str = "MILD_LEFT";
         break;
-      case 4: // mildRight
+      case 6: // mildRight
         lateral_str = "MILD_RIGHT";
         break;
-      case 5: // hardLeft
+      case 7: // hardLeft
         lateral_str = "HARD_LEFT";
         break;
-      case 6: // hardRight
+      case 8: // hardRight
         lateral_str = "HARD_RIGHT";
         break;
       default:
@@ -112,21 +118,27 @@ void HudRenderer::updateSeatControlState(const SubMaster &sm) {
         longitudinal_str = "NEUTRAL";
         break;
       case 1: // forward
-        longitudinal_str = "FORWARD";
+        longitudinal_str = "MILD_FORWARD";
         break;
       case 2: // back
-        longitudinal_str = "BACK";
+        longitudinal_str = "MILD_BACK";
         break;
-      case 3: // mildLeft
+      case 3: // forward
+        longitudinal_str = "HARD_FORWARD";
+        break;
+      case 4: // back
+        longitudinal_str = "HARD_BACK";
+        break;
+      case 5: // mildLeft
         longitudinal_str = "MILD_LEFT";
         break;
-      case 4: // mildRight
+      case 6: // mildRight
         longitudinal_str = "MILD_RIGHT";
         break;
-      case 5: // hardLeft
+      case 7: // hardLeft
         longitudinal_str = "HARD_LEFT";
         break;
-      case 6: // hardRight
+      case 8: // hardRight
         longitudinal_str = "HARD_RIGHT";
         break;
       default:
@@ -256,10 +268,14 @@ void HudRenderer::drawSeatControlCommand(QPainter &p, const QRect &surface_rect)
   auto getCommandColor = [](const QString &command) -> QColor {
     if (command == "NEUTRAL") {
       return QColor(0xe7, 0xe7, 0xe7); // #e7e7e7
-    } else if (command == "FORWARD") {
+    } else if (command == "MILD_FORWARD") {
       return QColor(0xa3, 0xff, 0xac); // #a3ffac
-    } else if (command == "BACK") {
+    } else if (command == "HARD_FORWARD") {
+      return QColor(0x00, 0xa0, 0x10); // #00a010
+    } else if (command == "MILD_BACK") {
       return QColor(0xff, 0x6b, 0x55); // #ff6b55
+    } else if (command == "HARD_BACK") {
+      return QColor(0xe1, 0x1e, 0x00); // #e11e00
     } else if (command == "MILD_LEFT" || command == "MILD_RIGHT") {
       return QColor(0xff, 0xfa, 0x68); // #fffa68
     } else if (command == "HARD_LEFT" || command == "HARD_RIGHT") {
