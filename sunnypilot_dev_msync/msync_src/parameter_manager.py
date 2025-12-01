@@ -15,22 +15,22 @@ from typing import Any
 class SeatControlParameterManager:
     DEFAULT_CONFIG: dict[str, Any] = {
         'frequency': 20,
-        'turn_thresh_1': 0.8,
-        'turn_thresh_2': 2.0,
+        'turn_thresh_1': 0.75,
+        'turn_thresh_2': 2.25,
         'accel_thresh_1': 1.75,
-        'accel_thresh_2': 2.5,
-        'decel_thresh_1': 1.2,
-        'decel_thresh_2': 2.0,
+        'accel_thresh_2': 1.75,
+        'decel_thresh_1': 1.0,
+        'decel_thresh_2': 1.5,
         'long_sens': 10,
-        'lat_sens': 6,
+        'lat_sens': 8,
         'long_sticky': 10,
-        'lat_sticky': 3,
+        'lat_sticky': 5,
         'long_horizon': 3.0,
-        'lat_horizon': 3.0,
+        'lat_horizon': 4.0,
         'use_plan': False,
-        'lockout_speed': 2.5,
-        'long_horizon_offset': 0.0,
-        'lat_horizon_offset': 0.0,
+        'lockout_speed': 3.0,
+        'long_horizon_offset': 1.0,
+        'lat_horizon_offset': 1.5,
     }
 
     PARAM_RANGES: dict[str, tuple[Any, Any]] = {

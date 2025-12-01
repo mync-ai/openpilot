@@ -220,18 +220,18 @@ def main():
     parser = argparse.ArgumentParser(description='Enhanced Seat Control Service (file-based config)')
     parser.add_argument('--frequency', type=int, default=20, help='Update frequency in Hz')
     parser.add_argument('--turn-thresh-1', type=float, default=0.75, help='First turn threshold')
-    parser.add_argument('--turn-thresh-2', type=float, default=2.5, help='Second turn threshold')
+    parser.add_argument('--turn-thresh-2', type=float, default=2.25, help='Second turn threshold')
     parser.add_argument('--accel-thresh-1', type=float, default=1.75, help='First acceleration threshold')
-    parser.add_argument('--accel-thresh-2', type=float, default=2.5, help='Second acceleration threshold')
+    parser.add_argument('--accel-thresh-2', type=float, default=1.75, help='Second acceleration threshold')
     parser.add_argument('--decel-thresh-1', type=float, default=1.0, help='First deceleration threshold')
-    parser.add_argument('--decel-thresh-2', type=float, default=1.75, help='Second deceleration threshold')
+    parser.add_argument('--decel-thresh-2', type=float, default=1.5, help='Second deceleration threshold')
     parser.add_argument('--long-sens', type=int, default=10, help='Longitudinal sensitivity window')
     parser.add_argument('--lat-sens', type=int, default=8, help='Lateral sensitivity window')
     parser.add_argument('--long-sticky', type=int, default=10, help='Longitudinal sticky window')
     parser.add_argument('--lat-sticky', type=int, default=5, help='Lateral sticky window')
     parser.add_argument('--long-horizon', type=float, default=3.0,
                         help='Override time horizon for longitudinal decisions (defaults to --horizon)')
-    parser.add_argument('--long-horizon-offset', type=float, default=0.0,
+    parser.add_argument('--long-horizon-offset', type=float, default=1.0,
                         help='Override horizon offset for longitudinal decisions (defaults to --horizon-offset)')
     parser.add_argument('--lat-horizon', type=float, default=4.0,
                         help='Override time horizon for lateral decisions (defaults to --horizon)')

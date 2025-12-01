@@ -38,14 +38,14 @@ class Decider:
 
     commands = ['NEUTRAL', 'MILD_FORWARD', 'MILD_BACK', 'HARD_FORWARD', 'HARD_BACK', 'MILD_LEFT', 'MILD_RIGHT', 'HARD_LEFT', 'HARD_RIGHT']
 
-    def __init__(self, *, turn_thresh_1=1.0, turn_thresh_2=2.0,
-                 accel_thresh_1=1.0, accel_thresh_2=2.0,
-                 decel_thresh_1=1.0, decel_thresh_2=2.0,
-                 long_sens=5, lat_sens=5,
-                 long_sticky=3, lat_sticky=3,
-                 long_horizon=3.0, long_horizon_offset=0.0,
-                 lat_horizon=3.0, lat_horizon_offset=0.0,
-                 use_plan=True, lockout_speed=2.5):
+    def __init__(self, *, turn_thresh_1=0.75, turn_thresh_2=2.25,
+                 accel_thresh_1=1.75, accel_thresh_2=1.75,
+                 decel_thresh_1=1.0, decel_thresh_2=1.5,
+                 long_sens=10, lat_sens=8,
+                 long_sticky=5, lat_sticky=5,
+                 long_horizon=3.0, long_horizon_offset=1.0,
+                 lat_horizon=4.0, lat_horizon_offset=1.5,
+                 use_plan=False, lockout_speed=3.0):
         # Prediction buffers
         self.accelX_pred = []
         self.accelY_pred = []
