@@ -78,7 +78,8 @@ class EnhancedSeatControlService:
                 lat_horizon=self.current_config['lat_horizon'],
                 lat_horizon_offset=self.current_config['lat_horizon_offset'],
                 use_plan=self.current_config['use_plan'],
-                lockout_speed=self.current_config.get('lockout_speed', 2.5)
+                lockout_speed=self.current_config.get('lockout_speed', 2.5),
+                brake_lockout_speed=self.current_config.get('brake_lockout_speed', 6.5)
             )
 
             # Create publisher with current config
@@ -240,6 +241,7 @@ def main():
     parser.add_argument('--use-plan', action='store_true', default=False,
                        help='Use plan data instead of prediction data for longitudinal decisions')
     parser.add_argument('--lockout-speed', type=float, default=3.0, help='Lockout speed for roll lockout')
+    parser.add_argument('--brake-lockout-speed', type=float, default=6.5, help='Speed below which brake state transitions are locked out (m/s)')
 
     args = parser.parse_args()
 
@@ -261,7 +263,8 @@ def main():
         'lat_horizon': args.lat_horizon,
         'lat_horizon_offset': args.lat_horizon_offset,
         'use_plan': args.use_plan,
-        'lockout_speed': args.lockout_speed
+        'lockout_speed': args.lockout_speed,
+        'brake_lockout_speed': args.brake_lockout_speed
     }
     service = EnhancedSeatControlService(initial_config=config)
 

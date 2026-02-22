@@ -44,6 +44,7 @@ PARAM_DISPLAY_ORDER = [
   'lat_horizon_offset',
   'use_plan',
   'lockout_speed',
+  'brake_lockout_speed',
 ]
 
 COLOR_OK = '\033[92m'
@@ -76,6 +77,8 @@ def parse_set_args(pairs: list[str]) -> dict[str, Any]:
       try:
         if k in ('frequency', 'long_sens', 'lat_sens', 'long_sticky', 'lat_sticky'):
           v_conv = int(v)
+        elif k == 'brake_lockout_speed':
+          v_conv = float(v)
         else:
           v_conv = float(v)
       except ValueError as exc:
@@ -136,6 +139,7 @@ Parameters:
   lat_horizon_offset (float 0.0-9.0)
   use_plan (bool true/false)
   lockout_speed (float 0.0-20.0)
+  brake_lockout_speed (float 0.0-20.0)
 """)
         continue
       if cmd.lower().startswith('set '):

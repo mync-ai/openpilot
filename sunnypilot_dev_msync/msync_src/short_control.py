@@ -45,7 +45,8 @@ class Decider:
                  long_sticky=5, lat_sticky=5,
                  long_horizon=3.0, long_horizon_offset=1.0,
                  lat_horizon=4.0, lat_horizon_offset=1.5,
-                 use_plan=False, lockout_speed=3.0):
+                 use_plan=False, lockout_speed=3.0,
+                 brake_lockout_speed=1.0):
         # Prediction buffers
         self.accelX_pred = []
         self.accelY_pred = []
@@ -68,6 +69,7 @@ class Decider:
         self.long_horizon_offset = long_horizon_offset
         self.lat_horizon_offset = lat_horizon_offset
         self.lockout_speed = lockout_speed
+        self.brake_lockout_speed = brake_lockout_speed
         self.turn_thr1 = turn_thresh_1
         self.turn_thr2 = turn_thresh_2
         self.accel_thr1 = accel_thresh_1
@@ -213,6 +215,11 @@ class Decider:
             # Use sticky value if current state is not neutral, otherwise use smooth
             required = self.long_sticky if current_state != self.NEUTRAL else self.long_smooth
             state_attr = 'long_state'
+            # Prevent transitioning into a brake state from a non-brake state at low speed
+            if (new_decision in (self.MILD_BACK, self.HARD_BACK)
+                    and current_state not in (self.MILD_BACK, self.HARD_BACK)
+                    and self.vel < self.brake_lockout_speed):
+                lockout = True
 
         history.append(new_decision)
 

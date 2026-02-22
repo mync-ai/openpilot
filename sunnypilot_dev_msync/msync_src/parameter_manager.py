@@ -29,6 +29,7 @@ class SeatControlParameterManager:
         'lat_horizon': 4.0,
         'use_plan': False,
         'lockout_speed': 3.0,
+        'brake_lockout_speed': 6.5,
         'long_horizon_offset': 1.0,
         'lat_horizon_offset': 1.5,
     }
@@ -49,6 +50,7 @@ class SeatControlParameterManager:
         'lat_horizon': (0.5, 10.0),
         'use_plan': (False, True),
         'lockout_speed': (0.0, 20.0),
+        'brake_lockout_speed': (0.0, 20.0),
         'long_horizon_offset': (0.0, 9.0),
         'lat_horizon_offset': (0.0, 9.0),
     }
