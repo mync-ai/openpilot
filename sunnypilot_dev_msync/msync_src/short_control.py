@@ -46,7 +46,7 @@ class Decider:
                  long_horizon=3.0, long_horizon_offset=1.0,
                  lat_horizon=4.0, lat_horizon_offset=1.5,
                  use_plan=False, lockout_speed=3.0,
-                 brake_lockout_speed=1.0):
+                 brake_lockout_speed=6.5):
         # Prediction buffers
         self.accelX_pred = []
         self.accelY_pred = []
@@ -216,12 +216,18 @@ class Decider:
             required = self.long_sticky if current_state != self.NEUTRAL else self.long_smooth
             state_attr = 'long_state'
             # Prevent transitioning into a brake state from a non-brake state at low speed
+            # print("--DEBUG-- Velocity:", self.vel, "Current state:", current_state, "New decision:", new_decision, "Lockout:", self.brake_lockout_speed)
+            # print("(new_decision in (self.MILD_BACK, self.HARD_BACK))", new_decision in (self.MILD_BACK, self.HARD_BACK))
+            # print("(current_state not in (self.MILD_BACK, self.HARD_BACK))", current_state not in (self.MILD_BACK, self.HARD_BACK))
+            # print("(self.vel < self.brake_lockout_speed)", self.vel < self.brake_lockout_speed)
             if (new_decision in (self.MILD_BACK, self.HARD_BACK)
                     and current_state not in (self.MILD_BACK, self.HARD_BACK)
                     and self.vel < self.brake_lockout_speed):
                 lockout = True
 
         history.append(new_decision)
+        if lockout:
+            new_decision = self.NEUTRAL  # Override to neutral if lockout conditions are met
 
         # Trim history to the maximum required size (max of smooth and sticky)
         max_required = max(self.lat_smooth, self.lat_sticky) if domain == 'lat' else max(self.long_smooth, self.long_sticky)
@@ -236,8 +242,6 @@ class Decider:
                     setattr(self, state_attr, new_decision)
             elif all(h == new_decision for h in window):
                 setattr(self, state_attr, new_decision)
-        if lockout:
-            return self.NEUTRAL
         return getattr(self, state_attr)
 
     # ----------------------- Lateral decision logic -----------------------
