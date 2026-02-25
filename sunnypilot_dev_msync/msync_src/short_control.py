@@ -40,13 +40,13 @@ class Decider:
 
     def __init__(self, *, turn_thresh_1=0.75, turn_thresh_2=2.25,
                  accel_thresh_1=1.75, accel_thresh_2=1.75,
-                 decel_thresh_1=1.0, decel_thresh_2=1.5,
+                 decel_thresh_1=1.5, decel_thresh_2=1.8,
                  long_sens=10, lat_sens=8,
                  long_sticky=5, lat_sticky=5,
                  long_horizon=3.0, long_horizon_offset=1.0,
                  lat_horizon=4.0, lat_horizon_offset=1.5,
                  use_plan=False, lockout_speed=3.0,
-                 brake_lockout_speed=6.5):
+                 brake_lockout_speed=7.0):
         # Prediction buffers
         self.accelX_pred = []
         self.accelY_pred = []
