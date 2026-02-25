@@ -79,7 +79,7 @@ class EnhancedSeatControlService:
                 lat_horizon_offset=self.current_config['lat_horizon_offset'],
                 use_plan=self.current_config['use_plan'],
                 lockout_speed=self.current_config.get('lockout_speed', 2.5),
-                brake_lockout_speed=self.current_config.get('brake_lockout_speed', 6.5)
+                brake_lockout_speed=self.current_config.get('brake_lockout_speed', 7.0)
             )
 
             # Create publisher with current config
@@ -224,8 +224,8 @@ def main():
     parser.add_argument('--turn-thresh-2', type=float, default=2.25, help='Second turn threshold')
     parser.add_argument('--accel-thresh-1', type=float, default=1.75, help='First acceleration threshold')
     parser.add_argument('--accel-thresh-2', type=float, default=1.75, help='Second acceleration threshold')
-    parser.add_argument('--decel-thresh-1', type=float, default=1.0, help='First deceleration threshold')
-    parser.add_argument('--decel-thresh-2', type=float, default=1.5, help='Second deceleration threshold')
+    parser.add_argument('--decel-thresh-1', type=float, default=1.5, help='First deceleration threshold')
+    parser.add_argument('--decel-thresh-2', type=float, default=1.8, help='Second deceleration threshold')
     parser.add_argument('--long-sens', type=int, default=10, help='Longitudinal sensitivity window')
     parser.add_argument('--lat-sens', type=int, default=8, help='Lateral sensitivity window')
     parser.add_argument('--long-sticky', type=int, default=10, help='Longitudinal sticky window')
@@ -241,7 +241,7 @@ def main():
     parser.add_argument('--use-plan', action='store_true', default=False,
                        help='Use plan data instead of prediction data for longitudinal decisions')
     parser.add_argument('--lockout-speed', type=float, default=3.0, help='Lockout speed for roll lockout')
-    parser.add_argument('--brake-lockout-speed', type=float, default=6.5, help='Speed below which brake state transitions are locked out (m/s)')
+    parser.add_argument('--brake-lockout-speed', type=float, default=7.0, help='Speed below which brake state transitions are locked out (m/s)')
 
     args = parser.parse_args()
 
